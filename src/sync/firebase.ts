@@ -8,6 +8,7 @@ import {
 import {
   doc, initializeFirestore, onSnapshot, persistentLocalCache, setDoc, type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
+import { planReminders } from '../game/reminders';
 import type { GameState } from '../game/types';
 import { useStore } from '../store';
 import { firebaseConfig } from './config';
@@ -26,7 +27,10 @@ const progressOf = (g: GameState) => g.totals.quests * 1000 + g.xp;
 const push = (uid: string, game: GameState) => {
   if (!db) return;
   useSync.setState({ status: 'syncing' });
-  setDoc(doc(db, 'users', uid), { state: JSON.stringify(game), updatedAt: game.updatedAt })
+  // The reminder plan travels with the state so the server can send
+  // notifications while the app is closed.
+  const plan = planReminders(game, new Date());
+  setDoc(doc(db, 'users', uid), { state: JSON.stringify(game), updatedAt: game.updatedAt, plan }, { merge: true })
     .then(() => useSync.setState({ status: 'synced', error: undefined }))
     .catch((e: Error) => useSync.setState({ status: 'error', error: e.message }));
 };
@@ -111,6 +115,14 @@ export const signIn = async () => {
 
 export const signOut = async () => {
   if (auth) await fbSignOut(auth);
+};
+
+/** Save this phone's notification subscription so the server can reach it. */
+export const saveSubscription = async (deviceId: string, sub: PushSubscriptionJSON | null) => {
+  const user = useSync.getState().user;
+  if (!db || !user) return false;
+  await setDoc(doc(db, 'users', user.uid), { subs: { [deviceId]: sub ? { ...sub, ua: navigator.userAgent.slice(0, 120) } : null } }, { merge: true });
+  return true;
 };
 
 /** Push right away (used before the app goes to the background). */

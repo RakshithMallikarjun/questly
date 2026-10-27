@@ -9,6 +9,7 @@ import { Quit } from './screens/Quit';
 import { Rewards } from './screens/Rewards';
 import { Today } from './screens/Today';
 import { useStore } from './store';
+import { initNotifications } from './notify';
 import { flush, initSync } from './sync';
 
 type Tab = 'today' | 'quit' | 'progress' | 'rewards' | 'profile';
@@ -29,6 +30,7 @@ export default function App() {
 
   useEffect(() => {
     initSync();
+    initNotifications();
     tick();
     const onVisible = () => (document.visibilityState === 'visible' ? tick() : flush());
     document.addEventListener('visibilitychange', onVisible);

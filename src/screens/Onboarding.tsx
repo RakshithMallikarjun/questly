@@ -37,6 +37,7 @@ export function Onboarding() {
   const [customHabit, setCustomHabit] = useState(() => existing.habits.find((h) => h.presetId === 'custom')?.name ?? '');
   const [habitModes, setHabitModes] = useState<Record<string, { mode: 'quit' | 'limit'; limit?: number }>>({});
   const [reminderMode, setReminderMode] = useState<'both' | 'morning' | 'evening' | 'none'>('both');
+  const [perQuest, setPerQuest] = useState(true);
 
   const set = (patch: Partial<Profile>) => setP((x) => ({ ...x, ...patch }));
 
@@ -69,6 +70,7 @@ export function Onboarding() {
       reminders: {
         morning: reminderMode === 'both' || reminderMode === 'morning' ? p.reminders.morning ?? '08:00' : null,
         evening: reminderMode === 'both' || reminderMode === 'evening' ? p.reminders.evening ?? '20:30' : null,
+        perQuest,
       },
     };
     onboard(profile, habits);
@@ -242,7 +244,7 @@ export function Onboarding() {
         <>
           <Choice<'both' | 'morning' | 'evening' | 'none'> value={reminderMode} onPick={setReminderMode} options={[
             { value: 'both', label: 'Morning nudge and evening check-in' }, { value: 'morning', label: 'Morning nudge only' },
-            { value: 'evening', label: 'Evening check-in only' }, { value: 'none', label: 'No reminders' },
+            { value: 'evening', label: 'Evening check-in only' }, { value: 'none', label: 'No set-time reminders' },
           ]} />
           <div className="row">
             {(reminderMode === 'both' || reminderMode === 'morning') && (
@@ -256,6 +258,13 @@ export function Onboarding() {
               </label>
             )}
           </div>
+          <label className="between card" style={{ minHeight: 56, gap: 12 }}>
+            <span>
+              Also nudge me before each quest is due
+              <span className="muted tiny" style={{ display: 'block', marginTop: 2 }}>Every quest gets a finish-by time you can change.</span>
+            </span>
+            <input type="checkbox" checked={perQuest} onChange={(e) => setPerQuest(e.target.checked)} style={{ width: 24, height: 24, accentColor: '#3DDC97', flexShrink: 0 }} />
+          </label>
         </>
       );
       break;

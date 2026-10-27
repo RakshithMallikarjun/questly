@@ -10,3 +10,7 @@ export const firebaseConfig = {
   messagingSenderId: '',
   appId: '',
 };
+
+// Public key for phone notifications (Web Push). The matching private key is
+// stored as the VAPID_PRIVATE_KEY secret in GitHub, never in this repo.
+export const vapidPublicKey = 'BOPWhw1nDRa5UyHkwam8CFKfnMMMmVK-Vf_qA136VfTpArkYMHmVwYX8pyE9DGjgY5nKucWtjMbNEskB787RnnM';

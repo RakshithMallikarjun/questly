@@ -95,10 +95,24 @@ export interface Profile {
   energy: Energy;
   difficulty: Difficulty;
   motivations: string[];
-  reminders: { morning: string | null; evening: string | null };
+  reminders: Reminders;
+  /** Your own "finish by" times, keyed by quest id (or `checkin:<habitId>`). */
+  dueTimes?: Record<string, string>;
   resetHour: number;
   sound: boolean;
   language: string;
+}
+
+export interface Reminders {
+  /** Fixed daily reminder times ("HH:MM"), or null when off. */
+  morning: string | null;
+  evening: string | null;
+  /** Nudge before each quest's "finish by" time. Missing means on. */
+  perQuest?: boolean;
+  /** Minutes before the finish-by time. Missing means 30. */
+  lead?: number;
+  /** No notifications between these times. Missing means 22:30 to 07:00. */
+  quiet?: { from: string; to: string } | null;
 }
 
 export interface Goal {
