@@ -1,7 +1,9 @@
 import { newHealthKey } from '../game/health';
 import { useStore } from '../store';
 
-const SHORTCUT_URL = `${import.meta.env.BASE_URL}questly-health.shortcut`;
+// Shared from the Shortcuts app (iCloud link), which iPhones open reliably.
+// The signed file in public/ is the same shortcut, kept as a backup.
+const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/cea47b663f5e4a08ad81319c38a1a66e';
 const SHORTCUT_NAME = 'Questly Health';
 
 /** Runs the shortcut with your key, which it saves for its later automatic runs. */
@@ -51,9 +53,9 @@ export function HealthSetup() {
           <span className="label-caps muted">On your iPhone</span>
           <Step n={1} title="Add the Questly Health shortcut">
             <span className="muted small">
-              Tap below and choose <b>Download</b>. Then tap the ↓ arrow next to the address bar, open <b>Questly Health</b> and tap <b>Add Shortcut</b>.
+              Tap below, then <b>Get Shortcut</b> and <b>Add Shortcut</b>.
             </span>
-            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} download="Questly Health.shortcut" target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>Get the shortcut</a>
+            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>Get the shortcut</a>
           </Step>
           <Step n={2} title="Connect it to Questly">
             <span className="muted small">
