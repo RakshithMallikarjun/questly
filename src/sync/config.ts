@@ -14,4 +14,4 @@ export const firebaseConfig = {
 // Web Push key for phone notifications, from Firebase console: Project
 // settings > Cloud Messaging > Web Push certificates. Leave empty to show
 // reminders only while the app is open.
-export const vapidPublicKey = '';
+export const vapidPublicKey = 'BIeVteR8LPafgh7vKo6tzWoUgBDDDv4K6BUHvDjKGMQuDx1TcnxXnTPupBaxzRw0OffqNWxBCZBhedj1E8_Q1uI';
