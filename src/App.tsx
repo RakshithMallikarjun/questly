@@ -8,23 +8,26 @@ import { Progress } from './screens/Progress';
 import { Quit } from './screens/Quit';
 import { Rewards } from './screens/Rewards';
 import { Today } from './screens/Today';
+import { Journey } from './screens/Journey';
 import { useStore } from './store';
 import { initNotifications } from './notify';
 import { flush, initSync } from './sync';
 
 type Tab = 'today' | 'quit' | 'progress' | 'rewards' | 'profile';
 const TABS: Tab[] = ['today', 'quit', 'progress', 'rewards', 'profile'];
+/** Screens without their own tab. */
+type Page = Tab | 'journey';
 
-const tabFromHash = (): Tab => {
-  const h = window.location.hash.replace('#/', '') as Tab;
-  return TABS.includes(h) ? h : 'today';
+const tabFromHash = (): Page => {
+  const h = window.location.hash.replace('#/', '') as Page;
+  return TABS.includes(h as Tab) || h === 'journey' ? h : 'today';
 };
 
 export default function App() {
   const onboarded = useStore((s) => s.game.onboarded);
   const language = useStore((s) => s.game.profile.language);
   const tick = useStore((s) => s.tick);
-  const [tab, setTab] = useState<Tab>(tabFromHash);
+  const [tab, setTab] = useState<Page>(tabFromHash);
   setLanguage(language);
   const t = strings();
 
@@ -35,7 +38,10 @@ export default function App() {
     const onVisible = () => (document.visibilityState === 'visible' ? tick() : flush());
     document.addEventListener('visibilitychange', onVisible);
     const id = setInterval(tick, 60_000);
-    const onHash = () => setTab(tabFromHash());
+    const onHash = () => {
+      setTab(tabFromHash());
+      document.querySelector('.screen')?.scrollTo(0, 0);
+    };
     window.addEventListener('hashchange', onHash);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
@@ -65,6 +71,7 @@ export default function App() {
       {tab === 'progress' && <Progress />}
       {tab === 'rewards' && <Rewards />}
       {tab === 'profile' && <Profile />}
+      {tab === 'journey' && <Journey />}
       <nav className="nav" aria-label="Main">
         {TABS.map((k) => (
           <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)} aria-current={tab === k ? 'page' : undefined}>

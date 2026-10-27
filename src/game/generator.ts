@@ -2,6 +2,7 @@ import { AREAS, AREA_BY_ID } from './content/areas';
 import { presetFor } from './content/habits';
 import { QUESTS, questsFor } from './content/quests';
 import { addDays } from './date';
+import { journeyDayNumber, journeyQuests } from './journey';
 import { pick, rng, shuffle } from './rng';
 import type { AreaId, GameState, Habit, QuestDef, QuestInstance, Tier, TimeOfDay } from './types';
 import { CHECKIN_XP, TIER_XP, coinsFor } from './xp';
@@ -124,9 +125,7 @@ export const generateBoard = (s: GameState, day: string): QuestInstance[] => {
   }
 
   // Check-ins for each habit you're breaking.
-  s.habits.forEach((h) => {
-    list.push({ key: `checkin-${h.id}`, kind: 'checkin', habitId: h.id, title: checkinTitle(h), why: 'Be honest. Every clean day counts.', xp: CHECKIN_XP, coins: coinsFor(CHECKIN_XP) });
-  });
+  s.habits.forEach((h) => list.push(checkinQuest(s, h, day)));
 
   // Bonus quest: optional, something fun or new from any area.
   const bonusPool = QUESTS.filter((q) => q.tier <= 2 && !used.has(q.id) && !areas.includes(q.area));
@@ -136,7 +135,19 @@ export const generateBoard = (s: GameState, day: string): QuestInstance[] => {
     list.push({ ...instance(bq, 'bonus', 2, 99), xp, coins: coinsFor(xp), why: `Optional. ${bq.why} (${AREA_BY_ID[bq.area].label})` });
   }
 
-  return list;
+  // Your habit journey always comes first.
+  return [...journeyQuests(s, day), ...list];
+};
+
+/** The daily check-in quest for a habit you're breaking. */
+export const checkinQuest = (s: GameState, h: Habit, day: string): QuestInstance => {
+  const j = s.journey && !s.journey.finishedOn ? s.journey : null;
+  const inJourney = j?.habits.some((x) => x.habitId === h.id && x.joinsOn <= journeyDayNumber(j, day));
+  return {
+    key: `checkin-${h.id}`, kind: 'checkin', habitId: h.id, title: checkinTitle(h),
+    why: inJourney ? `Part of your journey: Day ${journeyDayNumber(j!, day)} of ${j!.length}. Be honest.` : 'Be honest. Every clean day counts.',
+    xp: CHECKIN_XP, coins: coinsFor(CHECKIN_XP),
+  };
 };
 
 /** The daily check-in question for a habit. */

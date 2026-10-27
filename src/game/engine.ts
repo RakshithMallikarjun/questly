@@ -8,10 +8,12 @@ import { CHALLENGES, CHALLENGE_BY_ID, CHALLENGE_COINS, CHALLENGE_XP } from './co
 import { presetFor } from './content/habits';
 import { QUEST_BY_ID } from './content/quests';
 import { addDays, daysBetween, gameDay, weekStart } from './date';
-import { checkinTitle, generateBoard, isRequired } from './generator';
+import { checkinQuest, checkinTitle, generateBoard, isRequired } from './generator';
+import { JOIN_DAYS, MAX_LIVES, stagesFor } from './content/journeys';
+import { journeyDayComplete, journeyQuests } from './journey';
 import { hash } from './rng';
 import type {
-  AreaId, DayRecord, Difficulty, GameEvent, GameState, Habit, HabitMode, LimitPeriod, Profile, QuestInstance, StatId, Tier,
+  AreaId, DayRecord, Difficulty, GameEvent, GameState, Habit, HabitMode, Journey, JourneyHabit, LimitPeriod, Profile, QuestInstance, StatId, Tier,
 } from './types';
 import { CLEAR_BONUS_COINS, CLEAR_BONUS_XP, URGE_XP, coinsFor, levelFor, streakMultiplier } from './xp';
 
@@ -184,6 +186,8 @@ export const ensureToday = (input: GameState, now: Date): Result => {
     }
   }
 
+  checkJourneyMisses(s, day, events);
+
   // Adapt difficulty once a week.
   if (!s.lastTierCheck || daysBetween(s.lastTierCheck, day) >= 7) {
     for (const area of s.profile.areas) {
@@ -326,6 +330,7 @@ export const completeQuest = (input: GameState, key: string, now: Date, opts: { 
   }
 
   addXp(s, xp, coins, events);
+  updateJourneyDay(s, events);
   markCleared(s, events);
   s.updatedAt = now.getTime();
   checkBadges(s, events, now.getTime());
@@ -364,6 +369,7 @@ export const undoQuest = (input: GameState, key: string, now: Date): Result => {
     const g = s.goals.find((x) => x.area === q.area && !x.completedAt);
     if (g && g.progress > 0) g.progress -= 1;
   }
+  updateJourneyDay(s, []);
   unmarkCleared(s);
   s.updatedAt = now.getTime();
   return { state: s, events: [] };
@@ -390,7 +396,7 @@ export const swapQuest = (input: GameState, key: string, now: Date): Result => {
   const idx = t0?.queue.findIndex((q) => q.key === key) ?? -1;
   if (!t0 || idx < 0 || swapsLeft(input) <= 0) return { state: input, events: [] };
   const q = t0.queue[idx];
-  if (!q.area || q.kind === 'checkin') return { state: input, events: [] };
+  if (!q.area || q.kind === 'checkin' || q.kind === 'journey') return { state: input, events: [] };
   const used = new Set(t0.queue.concat(t0.doneQuests).map((x) => x.questId));
   const current = q.questId ? QUEST_BY_ID[q.questId] : undefined;
   const tier = current?.tier ?? input.tiers[q.area];
@@ -424,6 +430,7 @@ export const logSlip = (input: GameState, habitId: string, trigger: string | und
     record(s, t.day).done += 1;
   }
   const events: GameEvent[] = [];
+  updateJourneyDay(s, events);
   markCleared(s, events);
   s.updatedAt = now.getTime();
   return { state: s, events };
@@ -637,4 +644,173 @@ export const removeCustomQuest = (input: GameState, id: string, now: Date): Resu
 export const goalTarget = (area: AreaId, level: number) => {
   const ladder = AREA_BY_ID[area].goals;
   return ladder[Math.min(level, ladder.length - 1)];
+};
+
+
+// ---------------------------------------------------------------- habit journey
+
+/** One habit picked for a new journey. */
+export interface JourneyPick {
+  title: string;
+  steps: string[];
+  area?: AreaId;
+  /** Existing "break a habit" tracker to link. */
+  habitId?: string;
+  /** A new tracker to create and link. */
+  newHabit?: HabitChoice;
+}
+
+export interface JourneyPlan {
+  bundleId: string;
+  name: string;
+  length: number;
+  picks: JourneyPick[];
+}
+
+/** Every missed day (not done, not a rest day) costs a life. At 0 lives a comeback quest appears. */
+const checkJourneyMisses = (s: GameState, day: string, events: GameEvent[]) => {
+  const j = s.journey;
+  if (!j || j.finishedOn) return;
+  let lost = 0;
+  for (let d = addDays(j.checkedThrough, 1); d < day; d = addDays(d, 1)) {
+    if (j.doneDays.includes(d) || s.restDays.includes(d) || j.missedDays.includes(d)) continue;
+    j.missedDays.push(d);
+    if (j.lives > 0) {
+      j.lives -= 1;
+      lost += 1;
+    }
+  }
+  if (lost) events.push({ type: 'lifeLost', value: j.lives, label: String(lost) });
+  if (j.lives === 0) j.comeback = true;
+  if (j.checkedThrough < addDays(day, -1)) j.checkedThrough = addDays(day, -1);
+  if (j.undo && j.undo.day !== day) delete j.undo;
+};
+
+/** Move the journey forward when today's journey quests are all done (or back, after an undo). */
+const updateJourneyDay = (s: GameState, events: GameEvent[]) => {
+  const j = s.journey;
+  const t = s.today;
+  if (!j || !t || (j.finishedOn && j.finishedOn !== t.day)) return;
+  const complete = journeyDayComplete(s, t.day);
+  const counted = j.doneDays.includes(t.day);
+
+  if (complete && !counted) {
+    j.doneDays.push(t.day);
+    const n = j.doneDays.length;
+    const u: NonNullable<Journey['undo']> = { day: t.day, xp: 0, coins: 0, life: false, comeback: false, finished: false };
+    if (j.comeback) {
+      j.comeback = false;
+      j.lives = 1;
+      u.comeback = true;
+      events.push({ type: 'lifeRestored', value: j.lives });
+    }
+    const stage = stagesFor(j.length).find((st) => st.to === n);
+    if (stage && !j.milestones.includes(n)) {
+      j.milestones.push(n);
+      u.milestone = n;
+      u.xp = stage.xp;
+      u.coins = stage.coins;
+      addXp(s, stage.xp, stage.coins, events);
+      if (n < j.length && j.lives < MAX_LIVES) {
+        j.lives += 1;
+        u.life = true;
+      }
+    }
+    if (n >= j.length) {
+      j.finishedOn = t.day;
+      u.finished = true;
+      s.journeysDone = [...(s.journeysDone ?? []), { name: j.name, length: j.length, startDay: j.startDay, finishedOn: t.day }];
+      events.push({ type: 'journeyDone', value: n, label: j.name });
+    } else if (stage) {
+      events.push({ type: 'journeyMilestone', value: n, label: stage.name });
+    } else {
+      events.push({ type: 'journeyDay', value: n });
+    }
+    j.undo = u;
+  } else if (!complete && counted) {
+    j.doneDays = j.doneDays.filter((d) => d !== t.day);
+    const u = j.undo?.day === t.day ? j.undo : undefined;
+    if (u) {
+      s.xp = Math.max(0, s.xp - u.xp);
+      s.coins = Math.max(0, s.coins - u.coins);
+      if (u.life) j.lives -= 1;
+      if (u.comeback) {
+        j.lives = 0;
+        j.comeback = true;
+      }
+      if (u.milestone) j.milestones = j.milestones.filter((m) => m !== u.milestone);
+      if (u.finished) {
+        delete j.finishedOn;
+        s.journeysDone = (s.journeysDone ?? []).slice(0, -1);
+      }
+      delete j.undo;
+    }
+  }
+};
+
+/** Add quests to today's board after the plan changed mid-day. */
+const addToToday = (s: GameState, quests: QuestInstance[]) => {
+  const t = s.today;
+  if (!t || !quests.length) return;
+  const have = new Set(t.queue.concat(t.doneQuests).map((q) => q.key));
+  const fresh = quests.filter((q) => !have.has(q.key));
+  t.queue = [...fresh.filter((q) => q.kind === 'journey'), ...t.queue, ...fresh.filter((q) => q.kind !== 'journey')];
+  record(s, t.day).offered += fresh.filter(isRequired).length;
+};
+
+/** Start a new habit journey. Habits join one at a time (Day 1, 8 and 22). */
+export const startJourney = (input: GameState, plan: JourneyPlan, now: Date): Result => {
+  if (!input.onboarded || (input.journey && !input.journey.finishedOn) || plan.picks.length < 1) return { state: input, events: [] };
+  const s = clone(input);
+  const day = s.today?.day ?? gameDay(now, s.profile.resetHour);
+  const newTrackers: Habit[] = [];
+  const habits: JourneyHabit[] = plan.picks.slice(0, 3).map((p, i) => {
+    let habitId = p.habitId;
+    if (!habitId && p.newHabit) {
+      const tracker = makeHabit(p.newHabit, day);
+      s.habits.push(tracker);
+      newTrackers.push(tracker);
+      habitId = tracker.id;
+    }
+    return {
+      id: `${i}-${hash(p.title + now.getTime()).toString(36)}`, title: p.title, steps: p.steps.length ? p.steps : [p.title],
+      area: p.area, habitId, joinsOn: JOIN_DAYS[i] ?? JOIN_DAYS[JOIN_DAYS.length - 1],
+    };
+  });
+  s.journey = {
+    id: `j-${now.getTime().toString(36)}`, bundleId: plan.bundleId, name: plan.name, length: plan.length, habits,
+    startDay: day, doneDays: [], missedDays: [], lives: MAX_LIVES, comeback: false, checkedThrough: addDays(day, -1), milestones: [],
+  };
+  if (s.today) {
+    // Refresh the wording of existing check-ins that are now part of the journey.
+    s.today.queue = s.today.queue.map((q) => {
+      const h = q.kind === 'checkin' ? s.habits.find((x) => x.id === q.habitId) : undefined;
+      return h ? checkinQuest(s, h, day) : q;
+    });
+    addToToday(s, [...journeyQuests(s, day), ...newTrackers.map((h) => checkinQuest(s, h, day))]);
+  }
+  s.updatedAt = now.getTime();
+  return { state: s, events: [] };
+};
+
+/** Stop the current journey (or clear a finished one). */
+export const endJourney = (input: GameState, now: Date): Result => {
+  if (!input.journey) return { state: input, events: [] };
+  const s = clone(input);
+  s.journey = null;
+  const t = s.today;
+  if (t) {
+    const removed = t.queue.filter((q) => q.kind === 'journey');
+    t.queue = t.queue.filter((q) => q.kind !== 'journey');
+    const rec = record(s, t.day);
+    rec.offered = Math.max(0, rec.offered - removed.length);
+    t.queue = t.queue.map((q) => {
+      const h = q.kind === 'checkin' ? s.habits.find((x) => x.id === q.habitId) : undefined;
+      return h ? checkinQuest(s, h, t.day) : q;
+    });
+  }
+  const events: GameEvent[] = [];
+  if (t) markCleared(s, events);
+  s.updatedAt = now.getTime();
+  return { state: s, events };
 };

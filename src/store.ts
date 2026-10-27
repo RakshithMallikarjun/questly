@@ -33,6 +33,8 @@ interface Store {
   rebuild: () => void;
   addCustomQuest: (area: AreaId, title: string, tier: Tier, everyDay: boolean) => void;
   removeCustomQuest: (id: string) => void;
+  startJourney: (plan: E.JourneyPlan) => void;
+  endJourney: () => void;
   onboard: (p: Profile, habits: E.HabitChoice[]) => void;
   reset: () => void;
 }
@@ -73,6 +75,8 @@ export const useStore = create<Store>()(
         rebuild: () => run((s, now) => E.rebuildToday(s, now)),
         addCustomQuest: (area, title, tier, everyDay) => run((s, now) => E.addCustomQuest(s, area, title, tier, everyDay, now)),
         removeCustomQuest: (id) => run((s, now) => E.removeCustomQuest(s, id, now)),
+        startJourney: (plan) => run((s, now) => E.startJourney(s, plan, now)),
+        endJourney: () => run((s, now) => E.endJourney(s, now)),
         onboard: (p, habits) => set({ game: E.finishOnboarding(get().game, p, habits, new Date()), events: [] }),
         reset: () => set({ game: E.emptyState(), events: [] }),
       };

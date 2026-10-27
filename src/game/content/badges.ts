@@ -1,4 +1,5 @@
 import type { GameState } from '../types';
+import { bestJourneyDays } from '../journey';
 import { levelFor } from '../xp';
 
 export interface BadgeDef {
@@ -45,6 +46,11 @@ export const BADGES: BadgeDef[] = [
   { id: 'reward_1', name: 'Treat yourself', desc: 'Redeem your first reward', color: '#FFC23D', test: (s) => s.purchases.length >= 1 },
   { id: 'challenge_1', name: 'Challenger', desc: 'Complete a weekly challenge', color: '#FF9F6B', test: (s) => s.challengesCompleted >= 1 },
   { id: 'challenge_5', name: 'Champion', desc: 'Complete 5 weekly challenges', color: '#FF9F6B', test: (s) => s.challengesCompleted >= 5 },
+  { id: 'journey_7', name: 'Spark lit', desc: 'Reach Day 7 of a habit journey', color: '#3DDC97', test: (s) => bestJourneyDays(s) >= 7 },
+  { id: 'journey_21', name: 'Builder', desc: 'Reach Day 21 of a habit journey', color: '#4FC3FF', test: (s) => bestJourneyDays(s) >= 21 },
+  { id: 'journey_45', name: 'Unshakeable', desc: 'Reach Day 45 of a habit journey', color: '#8C7BFF', test: (s) => bestJourneyDays(s) >= 45 },
+  { id: 'journey_done', name: 'Habit formed', desc: 'Finish a 66-day habit journey', color: '#FFC23D', test: (s) => (s.journeysDone ?? []).length >= 1 },
+  { id: 'journey_90', name: 'Legend', desc: 'Finish a 90-day hard-mode journey', color: '#FF4FA3', test: (s) => (s.journeysDone ?? []).some((j) => j.length >= 90) },
   { id: 'health_link', name: 'Connected', desc: 'Sync health data for the first time', color: '#5EE3C1', test: (s) => Object.keys(s.health).length >= 1 },
 ];
 

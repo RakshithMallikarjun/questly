@@ -101,11 +101,14 @@ export const planReminders = (s: GameState, now: Date): PlannedReminder[] => {
       }
     }
     if (r.evening && (!known || required.length > 0)) {
+      const journeyOpen = known && s.journey && !s.journey.doneDays.includes(d) && required.some((q) => q.kind === 'journey' || (q.kind === 'checkin' && s.journey!.habits.some((h) => h.habitId === q.habitId)));
       out.push({
         at: momentIn(d, r.evening, p.resetHour),
         tag: `${d}|evening`,
-        title: t.eveningTitle,
-        body: known ? fmt(required.length === 1 ? t.eveningOne : t.eveningMany, { n: required.length }) : t.eveningGeneric,
+        title: journeyOpen ? t.journeyTitle : t.eveningTitle,
+        body: journeyOpen
+          ? fmt(t.journeyBody, { n: s.journey!.doneDays.length + 1, total: s.journey!.length })
+          : known ? fmt(required.length === 1 ? t.eveningOne : t.eveningMany, { n: required.length }) : t.eveningGeneric,
       });
     }
   }
