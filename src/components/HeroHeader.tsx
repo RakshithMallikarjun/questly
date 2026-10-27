@@ -33,9 +33,9 @@ export function HeroHeader() {
         </div>
       </div>
       <div className="chips3">
-        <div className="chip-stat"><Flame /><div><b>{g.streak.current}</b><span className="muted tiny">{t.common.dayStreak}</span></div></div>
-        <div className="chip-stat"><Coin /><div><b>{g.coins}</b><span className="muted tiny">{t.common.coins}</span></div></div>
-        <div className="chip-stat"><Shield /><div><b>{g.streak.shields}</b><span className="muted tiny">{t.common.shields}</span></div></div>
+        <div className="chip-stat" aria-label={`${g.streak.current} ${t.common.dayStreak}`}><Flame size={22} /><div><b>{g.streak.current}</b><span className="muted">streak</span></div></div>
+        <div className="chip-stat" aria-label={`${g.coins} ${t.common.coins}`}><Coin size={22} /><div><b>{g.coins}</b><span className="muted">{t.common.coins}</span></div></div>
+        <div className="chip-stat" aria-label={`${g.streak.shields} ${t.common.shields}`}><Shield size={22} /><div><b>{g.streak.shields}</b><span className="muted">{t.common.shields}</span></div></div>
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { LimitFields } from '../components/LimitFields';
+import { SwitchRow } from '../components/Switch';
 import { AREAS, AREA_BY_ID, AVATARS } from '../game/content/areas';
 import { HABIT_PRESETS } from '../game/content/habits';
 import { defaultProfile, goalTarget, type HabitChoice } from '../game/engine';
@@ -274,13 +275,9 @@ export function Onboarding() {
               </label>
             )}
           </div>
-          <label className="between card" style={{ minHeight: 56, gap: 12 }}>
-            <span>
-              Also nudge me before each quest is due
-              <span className="muted tiny" style={{ display: 'block', marginTop: 2 }}>Every quest gets a finish-by time you can change.</span>
-            </span>
-            <input type="checkbox" checked={perQuest} onChange={(e) => setPerQuest(e.target.checked)} style={{ width: 24, height: 24, accentColor: '#3DDC97', flexShrink: 0 }} />
-          </label>
+          <div className="card">
+            <SwitchRow label="Also nudge me before each quest is due" hint="Every quest gets a finish-by time you can change." on={perQuest} onChange={setPerQuest} />
+          </div>
         </>
       );
       break;

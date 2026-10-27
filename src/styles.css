@@ -110,8 +110,10 @@ p { margin: 0; }
 .bar > span { display: block; height: 100%; border-radius: 6px; transition: width 0.5s cubic-bezier(.2,.9,.3,1.2); }
 .bar-xp > span { background: linear-gradient(90deg, var(--green), var(--blue)); }
 .chips3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.chip-stat { background: var(--card); border-radius: 16px; padding: 10px; display: flex; align-items: center; gap: 8px; }
+.chip-stat { background: var(--card); border-radius: 16px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chip-stat > div { min-width: 0; line-height: 1.15; }
 .chip-stat b { font-family: var(--display); font-size: 18px; font-weight: 600; display: block; }
+.chip-stat span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
 /* Quest card */
 .quest-card {
@@ -214,3 +216,31 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Form controls: keep native date/time pickers inside the screen on iPhone */
+input, select { min-width: 0; max-width: 100%; }
+input[type='time'] { -webkit-appearance: none; appearance: none; display: block; text-align: left; }
+input[type='time']::-webkit-date-and-time-value { text-align: left; }
+input.time-sm { width: 128px; flex-shrink: 0; height: 40px; border-radius: 12px; padding: 0 8px; font-size: 15px; }
+label.field.grow { min-width: 0; }
+
+/* On/off switch */
+.switch { position: relative; width: 50px; height: 30px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; border-radius: 15px; background: var(--line-2); transition: background 0.2s; }
+.switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+.switch input:checked + span { background: var(--green); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+/* Settings rows */
+.set-row { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.set-row > .grow { display: flex; flex-direction: column; gap: 2px; }
+.divider { height: 1px; background: var(--line); margin: 2px 0; }
+
+/* Profile menu */
+.menu { background: var(--card); border-radius: 20px; overflow: hidden; }
+.menu button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: none; border: none; text-align: left; font-size: 16px; }
+.menu button + button { border-top: 1px solid var(--line); }
+.menu .ico { width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.menu .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 700; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
