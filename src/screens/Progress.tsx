@@ -4,6 +4,7 @@ import { goalTarget } from '../game/engine';
 import { Radar } from '../components/Radar';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
+import { JourneyCard } from './Journey';
 
 const SHADES = ['var(--line)', '#1E5E4A', '#2BA577', '#3DDC97'];
 
@@ -38,6 +39,8 @@ export function Progress() {
       <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: '12px 4px 6px' }}>
         <Radar stats={g.stats} />
       </div>
+
+      <JourneyCard />
 
       <div className="stack">
         <h2>{t.progress.goals}</h2>

@@ -41,7 +41,7 @@ export interface QuestDef {
   auto?: { metric: HealthMetric; value: number };
 }
 
-export type QuestKind = 'main' | 'daily' | 'bonus' | 'checkin';
+export type QuestKind = 'main' | 'daily' | 'bonus' | 'checkin' | 'journey';
 
 /** One quest on today's board. */
 export interface QuestInstance {
@@ -169,6 +169,49 @@ export interface WeeklyChallenge {
   completed: boolean;
 }
 
+/** One habit inside a 66-day journey. */
+export interface JourneyHabit {
+  id: string;
+  title: string; // short name, e.g. "Walk"
+  /** The daily task for each stage of this habit, easiest first. */
+  steps: string[];
+  area?: AreaId;
+  /** Linked "break a habit" tracker: its daily check-in counts as this habit. */
+  habitId?: string;
+  /** Journey day on which this habit joins (habits are added gradually). */
+  joinsOn: number;
+}
+
+/** A 66-day (or 90-day) habit journey. Only one runs at a time. */
+export interface Journey {
+  id: string;
+  bundleId: string; // ready-made bundle id, or 'custom'
+  name: string;
+  length: number; // 66 or 90
+  habits: JourneyHabit[];
+  startDay: string;
+  /** Days fully completed. The journey moves one step for each. */
+  doneDays: string[];
+  missedDays: string[];
+  lives: number;
+  /** Out of lives: a comeback quest appears until you complete a day. */
+  comeback: boolean;
+  /** Last day already checked for a miss. */
+  checkedThrough: string;
+  /** Milestone days already rewarded. */
+  milestones: number[];
+  /** What completing today changed, so an undo can put it back. */
+  undo?: { day: string; xp: number; coins: number; life: boolean; comeback: boolean; milestone?: number; finished: boolean };
+  finishedOn?: string;
+}
+
+export interface FinishedJourney {
+  name: string;
+  length: number;
+  startDay: string;
+  finishedOn: string;
+}
+
 export interface HealthDay {
   steps?: number;
   sleepHours?: number;
@@ -206,6 +249,9 @@ export interface GameState {
   restDays: string[];
   challenge: WeeklyChallenge | null;
   challengesCompleted: number;
+  /** The habit journey in progress (missing on older saves). */
+  journey?: Journey | null;
+  journeysDone?: FinishedJourney[];
   customQuests: CustomQuest[];
   health: Record<string, HealthDay>;
   totals: { quests: number; mains: number; daysCleared: number; goals: number; earlyBird: number };
@@ -213,7 +259,9 @@ export interface GameState {
 
 /** Things that happened as a result of an action, for celebrations. */
 export interface GameEvent {
-  type: 'levelUp' | 'badge' | 'dayCleared' | 'streak' | 'goal' | 'shieldUsed' | 'tierUp';
+  type:
+    | 'levelUp' | 'badge' | 'dayCleared' | 'streak' | 'goal' | 'shieldUsed' | 'tierUp'
+    | 'journeyDay' | 'journeyMilestone' | 'journeyDone' | 'lifeLost' | 'lifeRestored';
   value?: number;
   id?: string;
   label?: string;

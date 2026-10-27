@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BADGE_BY_ID } from '../game/content/badges';
 import { levelFor, titleFor } from '../game/xp';
 import { useStore } from '../store';
+import { stagesFor } from '../game/content/journeys';
 import { burst, buzz, chime } from '../fx';
 import { Star } from './Icon';
 
@@ -11,7 +12,7 @@ export function Celebrations() {
   const pop = useStore((s) => s.popEvent);
   const g = useStore((s) => s.game);
   const e = events[0];
-  const big = e && (e.type === 'levelUp' || e.type === 'goal');
+  const big = e && (e.type === 'levelUp' || e.type === 'goal' || e.type === 'journeyMilestone' || e.type === 'journeyDone');
   // Several badges at once are shown together in one message.
   let badgeRun = 0;
   while (events[badgeRun]?.type === 'badge') badgeRun += 1;
@@ -19,11 +20,11 @@ export function Celebrations() {
   useEffect(() => {
     if (!e) return;
     const sound = g.profile.sound;
-    if (e.type === 'levelUp' || e.type === 'goal') {
+    if (big) {
       burst(true);
       chime(sound, [523, 659, 784, 1046]);
       buzz(sound, [40, 60, 40, 60, 120]);
-    } else if (e.type === 'dayCleared' || e.type === 'badge') {
+    } else if (e.type === 'dayCleared' || e.type === 'badge' || e.type === 'journeyDay' || e.type === 'lifeRestored') {
       burst();
       chime(sound, [659, 784, 988]);
       buzz(sound, [30, 40, 60]);
@@ -74,8 +75,34 @@ export function Celebrations() {
     );
   }
 
+  if (e.type === 'journeyMilestone' || e.type === 'journeyDone') {
+    const j = g.journey;
+    const stage = j ? stagesFor(j.length).find((s) => s.to === e.value) : undefined;
+    const done = e.type === 'journeyDone';
+    return (
+      <div className="overlay center" role="dialog" aria-modal="true" aria-label={done ? 'Journey complete' : 'Chest unlocked'}>
+        <div className="celebrate">
+          <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>{done ? 'Journey complete!' : `Day ${e.value} reached!`}</span>
+          <div className="ring"><div><span style={{ fontSize: 84, lineHeight: 1 }}>{done ? '🏆' : '🎁'}</span></div></div>
+          <h1>{done ? `Habit formed: ${e.label}` : `${e.label} conquered`}</h1>
+          <p className="soft">
+            {done
+              ? `${e.value} days of showing up. These habits are part of who you are now.`
+              : 'You opened a treasure chest.'}
+            {stage ? ` +${stage.xp} XP, +${stage.coins} coins${!done && j?.undo?.life ? ', and a heart back' : ''}.` : ''}
+          </p>
+          <div className="grow" />
+          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus>{done ? 'Claim my trophy' : 'Onward!'}</button>
+        </div>
+      </div>
+    );
+  }
+
   const text =
-    e.type === 'badge'
+    e.type === 'journeyDay' ? `Journey step ${e.value} done! ${(g.journey?.length ?? 66) - (e.value ?? 0)} to go.`
+    : e.type === 'lifeLost' ? (g.journey?.comeback ? 'Out of hearts. A comeback quest is waiting for you today.' : `You missed a journey day and lost ${e.label === '1' ? 'a heart' : `${e.label} hearts`}. ${e.value} left.`)
+    : e.type === 'lifeRestored' ? 'Comeback complete! You won back a heart. ❤️'
+    : e.type === 'badge'
       ? badgeRun > 1
         ? `${badgeRun} badges unlocked: ${events.slice(0, badgeRun).map((b) => BADGE_BY_ID[b.id!]?.name ?? b.label).join(', ')}`
         : `Badge unlocked: ${BADGE_BY_ID[e.id!]?.name ?? e.label}`

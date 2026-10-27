@@ -13,9 +13,10 @@ import { useStore } from '../store';
 import { buzz, chime } from '../fx';
 import { enableNotifications, useNotify } from '../notify';
 import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
+import { JourneyCard } from './Journey';
 
 const colorFor = (q: QuestInstance) =>
-  q.kind === 'main' ? '#FFC23D' : q.kind === 'checkin' ? '#4FC3FF' : q.kind === 'bonus' ? '#FF4FA3' : q.area ? AREA_BY_ID[q.area].color : '#C3E44F';
+  q.kind === 'journey' ? '#5EE3C1' : q.kind === 'main' ? '#FFC23D' : q.kind === 'checkin' ? '#4FC3FF' : q.kind === 'bonus' ? '#FF4FA3' : q.area ? AREA_BY_ID[q.area].color : '#C3E44F';
 
 const timeLabel = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
@@ -95,7 +96,7 @@ export function Today() {
           )}
           <div className="row" style={{ justifyContent: 'center' }}>
             {today.queue.length > 1 && <button className="btn btn-text" onClick={() => skip(q.key)}>{t.today.notNow}</button>}
-            {q.area && q.kind !== 'checkin' && swapsLeft(g) > 0 && (
+            {q.area && q.kind !== 'checkin' && q.kind !== 'journey' && swapsLeft(g) > 0 && (
               <button className="btn btn-text" onClick={() => swap(q.key)} aria-label={t.today.swap}>
                 <Icon name="swap" size={18} /> {fmt(t.today.swapsLeft, { n: swapsLeft(g) })}
               </button>
@@ -137,6 +138,8 @@ export function Today() {
           )}
         </div>
       )}
+
+      <JourneyCard />
 
       {healthStale(g.profile.healthKey, g.health, today.day) && (
         <div className="card stack" style={{ border: '2px solid var(--green)' }}>
