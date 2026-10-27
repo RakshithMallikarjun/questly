@@ -1,3 +1,4 @@
+import { addDays } from '../game/date';
 import { newHealthKey } from '../game/health';
 import { useStore } from '../store';
 
@@ -5,6 +6,16 @@ import { useStore } from '../store';
 // The signed file in public/ is the same shortcut, kept as a backup.
 const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/4df29f250bad4962aea399b0df505100';
 const SHORTCUT_NAME = 'Questly Health';
+
+/** Runs the shortcut, which sends today's Health numbers using its saved key. */
+export const HEALTH_SYNC_URL = `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}`;
+
+/** True when Health is set up but no numbers arrived for the last 2 days. */
+export const healthStale = (key: string | undefined, health: Record<string, unknown>, today: string) => {
+  if (!key) return false;
+  const last = Object.keys(health).sort().at(-1);
+  return !last || last < addDays(today, -1);
+};
 
 /** Runs the shortcut with your key, which it saves for its later automatic runs. */
 const connectUrl = (key: string) =>
@@ -44,6 +55,7 @@ export function HealthSetup() {
             {h.workoutMinutes !== undefined && <span className="xp-pill" style={{ background: 'var(--blue)' }}>{h.workoutMinutes} min workout</span>}
           </div>
         )}
+        {h && <a className="btn btn-ghost btn-sm" href={HEALTH_SYNC_URL} style={{ textDecoration: 'none' }}>Sync now</a>}
       </div>
 
       {!key ? (
@@ -63,10 +75,15 @@ export function HealthSetup() {
             </span>
             <a className="btn btn-gold btn-sm" href={connectUrl(key)} style={{ textDecoration: 'none' }}>Connect</a>
           </Step>
-          <Step n={3} title="Make it automatic">
-            <span className="muted small">
-              In Shortcuts, open <b>Automation</b> → <b>+</b> → <b>Time of Day</b>. Pick 9:00 PM, Daily, choose <b>Run Immediately</b>, then pick "Questly Health". Add a second one at 7:00 AM to send last night's sleep early.
-            </span>
+          <Step n={3} title="Make it automatic (one time)">
+            <span className="muted small">iPhone only lets you set this up yourself. It takes about a minute:</span>
+            <ol className="small soft" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
+              <li>Open the <b>Shortcuts</b> app and tap <b>Automation</b> at the bottom.</li>
+              <li>Tap <b>+</b> (top right), then <b>Time of Day</b>.</li>
+              <li>Set the time to <b>9:00 PM</b>, keep <b>Daily</b>, and choose <b>Run Immediately</b>. Tap <b>Next</b>.</li>
+              <li>Pick <b>Questly Health</b>. Done!</li>
+            </ol>
+            <span className="muted tiny">Tip: add a second one at 7:00 AM so last night's sleep arrives in the morning. Missed a day? Tap Sync now.</span>
           </Step>
         </div>
       )}

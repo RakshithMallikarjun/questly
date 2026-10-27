@@ -12,6 +12,7 @@ import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
 import { buzz, chime } from '../fx';
 import { enableNotifications, useNotify } from '../notify';
+import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
 
 const colorFor = (q: QuestInstance) =>
   q.kind === 'main' ? '#FFC23D' : q.kind === 'checkin' ? '#4FC3FF' : q.kind === 'bonus' ? '#FF4FA3' : q.area ? AREA_BY_ID[q.area].color : '#C3E44F';
@@ -134,6 +135,14 @@ export function Today() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {healthStale(g.profile.healthKey, g.health, today.day) && (
+        <div className="card stack" style={{ border: '2px solid var(--green)' }}>
+          <b>No Health data for 2 days</b>
+          <span className="soft small">Tap to send today's steps and sleep. To make it automatic, see Profile → Apple Health, step 3.</span>
+          <a className="btn btn-ghost btn-sm" href={HEALTH_SYNC_URL} style={{ textDecoration: 'none' }}>Sync now</a>
         </div>
       )}
 
