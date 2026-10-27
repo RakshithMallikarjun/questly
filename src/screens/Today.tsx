@@ -140,7 +140,7 @@ export function Today() {
       {permission === 'default' && (
         <div className="card stack" style={{ border: '2px solid var(--purple)' }}>
           <div className="row"><Icon name="clock" color="var(--purple)" /><b>{t.remind.section}</b></div>
-          <span className="soft small">{t.remind.perQuestHelp}</span>
+          <span className="soft small">{t.remind.enableBody}</span>
           <button className="btn btn-ghost btn-sm" onClick={() => void enableNotifications()}>{t.remind.enable}</button>
         </div>
       )}

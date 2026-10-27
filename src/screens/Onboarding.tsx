@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
+import { LimitFields } from '../components/LimitFields';
+import { SwitchRow } from '../components/Switch';
 import { AREAS, AREA_BY_ID, AVATARS } from '../game/content/areas';
 import { HABIT_PRESETS } from '../game/content/habits';
 import { defaultProfile, goalTarget, type HabitChoice } from '../game/engine';
-import type { AreaId, Difficulty, Energy, Profile, Weekday } from '../game/types';
+import type { AreaId, Difficulty, Energy, LimitPeriod, Profile, Weekday } from '../game/types';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/HeroHeader';
 import { useStore } from '../store';
 import { burst } from '../fx';
+import { signIn, syncConfigured, useSync } from '../sync';
 
 type Opt<T> = { value: T; label: string; hint?: string };
 
@@ -35,21 +38,22 @@ export function Onboarding() {
   const [p, setP] = useState<Profile>(() => (existing.profile.name ? { ...existing.profile } : { ...defaultProfile(), areas: [] }));
   const [habitIds, setHabitIds] = useState<string[]>(() => existing.habits.filter((h) => h.presetId !== 'custom').map((h) => h.presetId));
   const [customHabit, setCustomHabit] = useState(() => existing.habits.find((h) => h.presetId === 'custom')?.name ?? '');
-  const [habitModes, setHabitModes] = useState<Record<string, { mode: 'quit' | 'limit'; limit?: number }>>({});
+  const [habitModes, setHabitModes] = useState<Record<string, { mode: 'quit' | 'limit'; limit?: number; period?: LimitPeriod }>>({});
   const [reminderMode, setReminderMode] = useState<'both' | 'morning' | 'evening' | 'none'>('both');
   const [perQuest, setPerQuest] = useState(true);
 
+  const sync = useSync();
   const set = (patch: Partial<Profile>) => setP((x) => ({ ...x, ...patch }));
 
   const habits: HabitChoice[] = useMemo(() => {
     const list: HabitChoice[] = habitIds.map((id) => {
       const pre = HABIT_PRESETS.find((h) => h.id === id)!;
       const m = habitModes[id] ?? { mode: pre.defaultMode, limit: pre.limit };
-      return { presetId: id, name: pre.name, mode: m.mode, limit: m.mode === 'limit' ? m.limit ?? pre.limit ?? 1 : undefined, unit: pre.unit };
+      return { presetId: id, name: pre.name, mode: m.mode, limit: m.mode === 'limit' ? m.limit ?? pre.limit ?? 1 : undefined, unit: pre.unit, period: m.mode === 'limit' ? m.period : undefined };
     });
     if (customHabit.trim()) {
       const m = habitModes.custom ?? { mode: 'quit' as const };
-      list.push({ presetId: 'custom', name: customHabit.trim(), mode: m.mode, limit: m.mode === 'limit' ? m.limit ?? 1 : undefined, unit: m.mode === 'limit' ? 'times' : undefined });
+      list.push({ presetId: 'custom', name: customHabit.trim(), mode: m.mode, limit: m.mode === 'limit' ? m.limit ?? 1 : undefined, unit: m.mode === 'limit' ? 'times' : undefined, period: m.mode === 'limit' ? m.period : undefined });
     }
     return list;
   }, [habitIds, habitModes, customHabit]);
@@ -89,8 +93,23 @@ export function Onboarding() {
       sub = 'Questly turns your goals into daily quests. First, who are you?';
       body = (
         <>
+          {syncConfigured && (
+            <div className="card stack" style={{ border: '2px solid var(--blue)', gap: 8 }}>
+              {sync.user ? (
+                <span className="small">
+                  {sync.status === 'syncing' ? 'Looking for your progress…' : `Signed in as ${sync.user.email ?? sync.user.name}. No saved progress yet, so let's create your hero. It will sync from now on.`}
+                </span>
+              ) : (
+                <>
+                  <span className="small">Already use Questly on another phone?</span>
+                  <button className="btn btn-gold" onClick={() => void signIn()}>Sign in with Google</button>
+                </>
+              )}
+              {sync.status === 'error' && <span className="tiny" style={{ color: 'var(--pink)' }}>{sync.error}</span>}
+            </div>
+          )}
           <label className="field">What should we call you?
-            <input type="text" value={p.name} maxLength={24} placeholder="Your name" onChange={(e) => set({ name: e.target.value })} autoFocus />
+            <input type="text" value={p.name} maxLength={24} placeholder="Your name" onChange={(e) => set({ name: e.target.value })} />
           </label>
           <span className="muted small">Pick your avatar</span>
           <div className="options" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
@@ -174,7 +193,7 @@ export function Onboarding() {
           {habits.map((h) => {
             const key = h.presetId;
             const pre = HABIT_PRESETS.find((x) => x.id === key);
-            const m = habitModes[key] ?? { mode: h.mode, limit: h.limit };
+            const m = habitModes[key] ?? { mode: h.mode, limit: h.limit, period: h.period };
             const canLimit = pre ? pre.canLimit : true;
             return (
               <div key={key} className="card stack">
@@ -184,9 +203,7 @@ export function Onboarding() {
                   {canLimit && <button className={`btn btn-sm grow ${m.mode === 'limit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setHabitModes((x) => ({ ...x, [key]: { ...m, mode: 'limit', limit: m.limit ?? pre?.limit ?? 1 } }))}>Cut down</button>}
                 </div>
                 {m.mode === 'limit' && (
-                  <label className="field">Daily limit ({pre?.unit ?? 'times'})
-                    <input type="number" min={1} value={m.limit ?? pre?.limit ?? 1} onChange={(e) => setHabitModes((x) => ({ ...x, [key]: { ...m, limit: Math.max(1, Number(e.target.value) || 1) } }))} />
-                  </label>
+                  <LimitFields limit={m.limit ?? pre?.limit ?? 1} unit={pre?.unit} period={m.period} onChange={(v) => setHabitModes((x) => ({ ...x, [key]: { ...m, ...v } }))} />
                 )}
               </div>
             );
@@ -258,13 +275,9 @@ export function Onboarding() {
               </label>
             )}
           </div>
-          <label className="between card" style={{ minHeight: 56, gap: 12 }}>
-            <span>
-              Also nudge me before each quest is due
-              <span className="muted tiny" style={{ display: 'block', marginTop: 2 }}>Every quest gets a finish-by time you can change.</span>
-            </span>
-            <input type="checkbox" checked={perQuest} onChange={(e) => setPerQuest(e.target.checked)} style={{ width: 24, height: 24, accentColor: '#3DDC97', flexShrink: 0 }} />
-          </label>
+          <div className="card">
+            <SwitchRow label="Also nudge me before each quest is due" hint="Every quest gets a finish-by time you can change." on={perQuest} onChange={setPerQuest} />
+          </div>
         </>
       );
       break;

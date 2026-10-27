@@ -68,6 +68,7 @@ export interface DoneEntry {
 }
 
 export type HabitMode = 'quit' | 'limit';
+export type LimitPeriod = 'day' | 'week' | 'month';
 
 export interface Habit {
   id: string;
@@ -75,6 +76,7 @@ export interface Habit {
   name: string;
   mode: HabitMode;
   limit?: number; // for limit mode
+  period?: LimitPeriod; // the limit is per day (default), week or month
   unit?: string; // 'min', 'cups', ...
   cleanSince: string; // day key the current clean run started
   best: number; // best clean run in days

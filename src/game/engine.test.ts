@@ -174,3 +174,22 @@ describe('health data', () => {
     expect(s.today!.done.some((d) => d.key === 'daily-f9-1' && d.auto)).toBe(true);
   });
 });
+
+describe('limit periods', () => {
+  it('counts amounts across the week or month', async () => {
+    const { periodTotal, makeHabit, updateHabit } = await import('./engine');
+    const { checkinTitle } = await import('./generator');
+    const h = { ...makeHabit({ presetId: 'alcohol', name: 'Alcohol', mode: 'limit', limit: 1, unit: 'drinks', period: 'week' }, '2026-11-02'), amounts: { '2026-11-01': 3, '2026-11-02': 1, '2026-11-04': 1 } };
+    expect(periodTotal(h, '2026-11-04')).toBe(2); // Monday 2 Nov starts the week
+    expect(periodTotal({ ...h, period: 'month' }, '2026-11-04')).toBe(5);
+    expect(periodTotal({ ...h, period: 'month' }, '2026-12-01')).toBe(0);
+    expect(periodTotal({ ...h, period: 'day' }, '2026-11-04')).toBe(1);
+    expect(checkinTitle(h)).toBe('Still within 1 drink of alcohol this week?');
+
+    let s = start();
+    const id = s.habits[0].id;
+    s = updateHabit(s, id, { limit: 2, period: 'month' }, at('2026-11-02')).state;
+    expect(s.habits[0].period).toBe('month');
+    expect(s.today!.queue.find((q) => q.habitId === id)!.title).toContain('this month');
+  });
+});
