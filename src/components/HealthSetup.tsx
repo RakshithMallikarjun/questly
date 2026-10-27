@@ -3,7 +3,7 @@ import { useStore } from '../store';
 
 // Shared from the Shortcuts app (iCloud link), which iPhones open reliably.
 // The signed file in public/ is the same shortcut, kept as a backup.
-const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/cea47b663f5e4a08ad81319c38a1a66e';
+const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/90b68cae88804c528ec6703fe2f6871a';
 const SHORTCUT_NAME = 'Questly Health';
 
 /** Runs the shortcut with your key, which it saves for its later automatic runs. */
@@ -59,7 +59,7 @@ export function HealthSetup() {
           </Step>
           <Step n={2} title="Connect it to Questly">
             <span className="muted small">
-              Tap below. The Shortcuts app opens and runs it once. Allow access to Health and to save a file. Then come back here to see today's numbers.
+              Tap below. The Shortcuts app opens and runs it once (it must be named <b>Questly Health</b>). Allow access to Health and to save a file. Then come back here to see today's numbers.
             </span>
             <a className="btn btn-gold btn-sm" href={connectUrl(key)} style={{ textDecoration: 'none' }}>Connect</a>
           </Step>
