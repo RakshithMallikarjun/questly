@@ -3,12 +3,12 @@
 // Leave apiKey empty to run Questly in on-device-only mode.
 
 export const firebaseConfig = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyBe8Jnq7nkbFQhxMvPEX3hrtuULpJ3FbvM',
+  authDomain: 'questly-2a6c9.firebaseapp.com',
+  projectId: 'questly-2a6c9',
+  storageBucket: 'questly-2a6c9.firebasestorage.app',
+  messagingSenderId: '94384717938',
+  appId: '1:94384717938:web:c513b320788f35779f42eb',
 };
 
 // Public key for phone notifications (Web Push). The matching private key is
