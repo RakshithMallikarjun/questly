@@ -113,6 +113,7 @@ const en = {
     evening: 'Evening check-in',
     perQuest: 'Before each quest is due',
     perQuestHelp: 'Change a quest’s finish-by time from its card.',
+    enableBody: 'Get a nudge at your set times and before each quest is due.',
     lead: 'How early',
     quiet: 'Quiet hours',
     quietFrom: 'From',
