@@ -13,6 +13,8 @@ export const initSync = () => {
 };
 export const signIn = () => load().then((m) => m.signIn());
 export const signOut = () => load().then((m) => m.signOut());
+export const registerPush = (deviceId: string, reg: ServiceWorkerRegistration) =>
+  syncConfigured ? load().then((m) => m.registerPush(deviceId, reg)) : Promise.resolve(false);
 export const flush = () => {
   if (mod) mod.then((m) => m.flush());
 };

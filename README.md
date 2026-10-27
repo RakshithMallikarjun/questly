@@ -12,6 +12,7 @@ Level up your life, one quest at a time. Questly is a free, personal habit app t
 - **Quit tab:** clean-day counters, daily limits for cut-down habits, an "I'm tempted" urge breaker, and slip triggers.
 - **Rewards shop:** spend coins on rewards you define, or on a once-a-week rest day pass that keeps your streak.
 - **Adapts to you:** areas where you finish 80%+ of quests get harder each week; below 40% they get easier.
+- **Reminders:** a morning nudge and evening check-in at times you pick, plus a nudge before each quest's finish-by time (editable on every quest), with quiet hours.
 - **Works like an app:** add it to your phone's home screen. Works offline.
 - **Sync (optional):** Google sign-in syncs progress between phones through your own free Firebase project.
 
@@ -33,3 +34,4 @@ npm run build   # production build in dist/
 - `src/screens/` holds the five tabs and onboarding. `src/i18n/en.ts` holds all interface text, so other languages can be added later.
 - Sync settings live in `src/sync/config.ts`; data rules are in `firestore.rules`.
 - Every push to `main` is tested and deployed to GitHub Pages by `.github/workflows/deploy.yml`.
+- Reminders: `src/game/reminders.ts` plans them; `src/notify.ts` asks for permission and registers the phone; `public/push-sw.js` shows them. While the app is closed, `.github/workflows/reminders.yml` runs `server/send-reminders.mjs` every 10 minutes. It sends through Firebase Cloud Messaging and needs the repository secret `FIREBASE_SERVICE_ACCOUNT` (a Firebase service account key, as JSON), plus the Web Push public key in `vapidPublicKey` (`src/sync/config.ts`). Without them the job does nothing and reminders only show while the app is open.

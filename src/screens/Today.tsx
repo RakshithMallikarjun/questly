@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AREA_BY_ID } from '../game/content/areas';
 import { CHALLENGE_BY_ID } from '../game/content/challenges';
 import { swapsLeft } from '../game/engine';
+import { dueFor, dueKey, timeLabel as clock } from '../game/reminders';
 import { streakMultiplier } from '../game/xp';
 import type { QuestInstance } from '../game/types';
 import { HeroHeader } from '../components/HeroHeader';
@@ -10,6 +11,7 @@ import { SlipSheet } from '../components/SlipSheet';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
 import { buzz, chime } from '../fx';
+import { enableNotifications, useNotify } from '../notify';
 
 const colorFor = (q: QuestInstance) =>
   q.kind === 'main' ? '#FFC23D' : q.kind === 'checkin' ? '#4FC3FF' : q.kind === 'bonus' ? '#FF4FA3' : q.area ? AREA_BY_ID[q.area].color : '#C3E44F';
@@ -21,6 +23,8 @@ export function Today() {
   const { complete, skip, swap, undo, challengeDay } = useStore.getState();
   const [showDone, setShowDone] = useState(false);
   const [slipFor, setSlipFor] = useState<string | null>(null);
+  const [editDue, setEditDue] = useState(false);
+  const permission = useNotify((s) => s.permission);
   const t = strings();
   const today = g.today;
   if (!today) return null;
@@ -74,6 +78,11 @@ export function Today() {
           </div>
           <div className="quest-title">{q.title}</div>
           <p className="soft center">{q.why}{q.kind === 'main' ? ` (${t.today.double})` : ''}</p>
+          {dueFor(q, g.profile) && dueKey(q) && (
+            <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'center', fontSize: 13 }} onClick={() => setEditDue(true)} aria-label={t.today.finishByEdit}>
+              <Icon name="clock" size={16} /> {fmt(t.today.finishBy, { time: clock(dueFor(q, g.profile)!) })}
+            </button>
+          )}
           <div className="grow" />
           {q.kind === 'checkin' ? (
             <>
@@ -128,6 +137,14 @@ export function Today() {
         </div>
       )}
 
+      {permission === 'default' && (
+        <div className="card stack" style={{ border: '2px solid var(--purple)' }}>
+          <div className="row"><Icon name="clock" color="var(--purple)" /><b>{t.remind.section}</b></div>
+          <span className="soft small">{t.remind.perQuestHelp}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => void enableNotifications()}>{t.remind.enable}</button>
+        </div>
+      )}
+
       {challenge && g.challenge && (
         <div className="card stack" style={{ border: '2px solid #FF9F6B' }}>
           <div className="between">
@@ -150,7 +167,34 @@ export function Today() {
         </div>
       )}
 
+      {editDue && q && <DueSheet q={q} onClose={() => setEditDue(false)} />}
       {slipFor && <SlipSheet habitId={slipFor} onClose={() => setSlipFor(null)} />}
+    </div>
+  );
+}
+
+function DueSheet({ q, onClose }: { q: QuestInstance; onClose: () => void }) {
+  const profile = useStore((s) => s.game.profile);
+  const updateProfile = useStore((s) => s.updateProfile);
+  const t = strings();
+  const key = dueKey(q)!;
+  const due = dueFor(q, profile)!;
+  const setDue = (v: string | null) => {
+    const next = { ...profile.dueTimes };
+    if (v) next[key] = v;
+    else delete next[key];
+    updateProfile({ dueTimes: next });
+  };
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={t.today.finishByEdit} onClick={(e) => e.stopPropagation()}>
+        <h2>{t.today.finishByEdit}</h2>
+        <b>{q.title}</b>
+        <input type="time" value={due} aria-label={t.today.finishByEdit} onChange={(e) => e.target.value && setDue(e.target.value)} />
+        <span className="muted small">{t.today.finishByHelp}</span>
+        {profile.dueTimes?.[key] && <button className="btn btn-text" onClick={() => setDue(null)}>{t.today.finishByReset}</button>}
+        <button className="btn btn-gold" onClick={onClose}>{t.common.save}</button>
+      </div>
     </div>
   );
 }

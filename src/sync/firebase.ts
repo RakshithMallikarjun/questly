@@ -8,9 +8,10 @@ import {
 import {
   doc, initializeFirestore, onSnapshot, persistentLocalCache, setDoc, type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
+import { planReminders } from '../game/reminders';
 import type { GameState } from '../game/types';
 import { useStore } from '../store';
-import { firebaseConfig } from './config';
+import { firebaseConfig, vapidPublicKey } from './config';
 import { syncConfigured, useSync } from './state';
 
 let app: FirebaseApp | null = null;
@@ -26,7 +27,10 @@ const progressOf = (g: GameState) => g.totals.quests * 1000 + g.xp;
 const push = (uid: string, game: GameState) => {
   if (!db) return;
   useSync.setState({ status: 'syncing' });
-  setDoc(doc(db, 'users', uid), { state: JSON.stringify(game), updatedAt: game.updatedAt })
+  // The reminder plan travels with the state so the server can send
+  // notifications while the app is closed.
+  const plan = planReminders(game, new Date());
+  setDoc(doc(db, 'users', uid), { state: JSON.stringify(game), updatedAt: game.updatedAt, plan }, { merge: true })
     .then(() => useSync.setState({ status: 'synced', error: undefined }))
     .catch((e: Error) => useSync.setState({ status: 'error', error: e.message }));
 };
@@ -111,6 +115,21 @@ export const signIn = async () => {
 
 export const signOut = async () => {
   if (auth) await fbSignOut(auth);
+};
+
+/**
+ * Register this phone for reminders sent by the server (Firebase Cloud
+ * Messaging) and save its address in your user document.
+ */
+export const registerPush = async (deviceId: string, reg: ServiceWorkerRegistration) => {
+  const user = useSync.getState().user;
+  if (!app || !db || !user || !vapidPublicKey) return false;
+  const { getMessaging, getToken, isSupported } = await import('firebase/messaging');
+  if (!(await isSupported())) return false;
+  const token = await getToken(getMessaging(app), { vapidKey: vapidPublicKey, serviceWorkerRegistration: reg });
+  if (!token) return false;
+  await setDoc(doc(db, 'users', user.uid), { subs: { [deviceId]: { token, ua: navigator.userAgent.slice(0, 120) } } }, { merge: true });
+  return true;
 };
 
 /** Push right away (used before the app goes to the background). */

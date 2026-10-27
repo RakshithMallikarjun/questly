@@ -3,6 +3,7 @@ import { AREAS, AREA_BY_ID } from '../game/content/areas';
 import type { AreaId, Difficulty, Energy, GameState, Profile as P, Tier } from '../game/types';
 import { Avatar } from '../components/HeroHeader';
 import { Icon } from '../components/Icon';
+import { ReminderSettings } from '../components/ReminderSettings';
 import { AddHabitSheet } from './Quit';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
@@ -107,6 +108,10 @@ export function Profile() {
         </Section>
       )}
 
+      <Section title={t.remind.section}>
+        <ReminderSettings />
+      </Section>
+
       <Section title={t.profile.settings}>
         <span className="muted small">{t.profile.difficulty}</span>
         <Segmented<Difficulty> value={p.difficulty} onPick={(v) => setP({ difficulty: v })} options={[{ value: 'gentle', label: 'Gentle' }, { value: 'balanced', label: 'Balanced' }, { value: 'hardcore', label: 'Hardcore' }]} />
@@ -119,15 +124,6 @@ export function Profile() {
             {[0, 1, 2, 3, 4, 5, 6].map((h) => <option key={h} value={h}>{h === 0 ? 'Midnight' : `${h} am`}</option>)}
           </select>
         </label>
-        <div className="row">
-          <label className="field grow">Morning reminder
-            <input type="time" value={p.reminders.morning ?? ''} onChange={(e) => setP({ reminders: { ...p.reminders, morning: e.target.value || null } })} />
-          </label>
-          <label className="field grow">Evening reminder
-            <input type="time" value={p.reminders.evening ?? ''} onChange={(e) => setP({ reminders: { ...p.reminders, evening: e.target.value || null } })} />
-          </label>
-        </div>
-        <span className="muted tiny">Phone notifications arrive in the next update.</span>
         <label className="between" style={{ minHeight: 44 }}>
           <span>{t.profile.sound}</span>
           <input type="checkbox" checked={p.sound} onChange={(e) => setP({ sound: e.target.checked })} style={{ width: 24, height: 24, accentColor: '#3DDC97' }} />
