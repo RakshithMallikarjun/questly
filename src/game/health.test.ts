@@ -15,6 +15,12 @@ describe('apple health inbox', () => {
     ]);
   });
 
+  it('reads the weekly ring the shortcut writes', () => {
+    expect(parseHealthInbox({ w2: { date: '20261027', steps: '8001', sleepMinutes: '-420' }, w3: { date: '' } })).toEqual([
+      { day: '2026-10-27', data: { steps: 8001, sleepHours: 7 } },
+    ]);
+  });
+
   it('drops impossible sleep spans', () => {
     expect(parseHealthInbox({ d20261027: { sleepMinutes: '2000' } })).toEqual([]);
   });

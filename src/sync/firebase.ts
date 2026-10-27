@@ -8,6 +8,7 @@ import {
 import {
   doc, initializeFirestore, onSnapshot, persistentLocalCache, setDoc, type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
+import { healthChanged, parseHealthInbox } from '../game/health';
 import { planReminders } from '../game/reminders';
 import type { GameState } from '../game/types';
 import { useStore } from '../store';
@@ -82,11 +83,34 @@ const stopSync = () => {
   stopStore = null;
 };
 
+// Apple Health: the iPhone shortcut writes to health/{key}; apply what arrives.
+let stopHealth: Unsubscribe | null = null;
+let healthKey: string | undefined;
+const watchHealth = (key: string | undefined) => {
+  if (key === healthKey) return;
+  healthKey = key;
+  stopHealth?.();
+  stopHealth = null;
+  if (!db || !key) return;
+  stopHealth = onSnapshot(
+    doc(db, 'health', key),
+    (snap) => {
+      if (!snap.exists()) return;
+      for (const { day, data } of parseHealthInbox(snap.data())) {
+        if (healthChanged(useStore.getState().game.health[day], data)) useStore.getState().health(day, data);
+      }
+    },
+    (e) => console.warn('Apple Health sync:', e.message),
+  );
+};
+
 export const initSync = () => {
   if (!syncConfigured || app) return;
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = initializeFirestore(app, { localCache: persistentLocalCache() });
+  watchHealth(useStore.getState().game.profile.healthKey);
+  useStore.subscribe((st) => watchHealth(st.game.profile.healthKey));
   onAuthStateChanged(auth, (user) => {
     stopSync();
     if (user) {

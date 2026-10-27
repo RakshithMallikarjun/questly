@@ -11,7 +11,7 @@ service cloud.firestore {
     // the app reads it back. Documents cannot be listed, only opened by key.
     match /health/{key} {
       allow get, create, update: if key.size() >= 24 && key.size() <= 64
-        && (request.method == 'get' || request.resource.data.size() <= 60);
+        && (request.method == 'get' || request.resource.data.size() <= 10);
     }
   }
 }
