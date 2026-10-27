@@ -2,7 +2,7 @@
 
 Level up your life, one quest at a time. Questly is a free, personal habit app that turns your goals into daily quests, rewards you with XP, coins, levels and badges, and helps you break bad habits.
 
-**Live app:** https://rakshithmallikarjun.github.io/questly/
+**Live app:** https://questly.fitfoundry.in/
 
 ## What it does
 
