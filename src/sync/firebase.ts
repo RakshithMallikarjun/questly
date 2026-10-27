@@ -11,7 +11,7 @@ import {
 import { planReminders } from '../game/reminders';
 import type { GameState } from '../game/types';
 import { useStore } from '../store';
-import { firebaseConfig } from './config';
+import { firebaseConfig, vapidPublicKey } from './config';
 import { syncConfigured, useSync } from './state';
 
 let app: FirebaseApp | null = null;
@@ -117,11 +117,18 @@ export const signOut = async () => {
   if (auth) await fbSignOut(auth);
 };
 
-/** Save this phone's notification subscription so the server can reach it. */
-export const saveSubscription = async (deviceId: string, sub: PushSubscriptionJSON | null) => {
+/**
+ * Register this phone for reminders sent by the server (Firebase Cloud
+ * Messaging) and save its address in your user document.
+ */
+export const registerPush = async (deviceId: string, reg: ServiceWorkerRegistration) => {
   const user = useSync.getState().user;
-  if (!db || !user) return false;
-  await setDoc(doc(db, 'users', user.uid), { subs: { [deviceId]: sub ? { ...sub, ua: navigator.userAgent.slice(0, 120) } : null } }, { merge: true });
+  if (!app || !db || !user || !vapidPublicKey) return false;
+  const { getMessaging, getToken, isSupported } = await import('firebase/messaging');
+  if (!(await isSupported())) return false;
+  const token = await getToken(getMessaging(app), { vapidKey: vapidPublicKey, serviceWorkerRegistration: reg });
+  if (!token) return false;
+  await setDoc(doc(db, 'users', user.uid), { subs: { [deviceId]: { token, ua: navigator.userAgent.slice(0, 120) } } }, { merge: true });
   return true;
 };
 

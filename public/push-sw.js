@@ -2,7 +2,9 @@
 self.addEventListener('push', (event) => {
   let data = {};
   try {
-    data = event.data ? event.data.json() : {};
+    const raw = event.data ? event.data.json() : {};
+    // Firebase Cloud Messaging wraps the fields in "data".
+    data = raw.data || raw;
   } catch {
     data = { body: event.data ? event.data.text() : '' };
   }

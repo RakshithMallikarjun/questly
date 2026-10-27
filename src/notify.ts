@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { planReminders } from './game/reminders';
 import { useStore } from './store';
-import { saveSubscription, syncConfigured, useSync } from './sync';
+import { registerPush, syncConfigured, useSync } from './sync';
 import { vapidPublicKey } from './sync/config';
 
 type Perm = NotificationPermission | 'unsupported';
@@ -42,21 +42,12 @@ const deviceId = (): string => {
   }
 };
 
-const keyBytes = (base64: string) => {
-  const pad = '='.repeat((4 - (base64.length % 4)) % 4);
-  const raw = atob((base64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-};
-
 /** Register this phone for server-sent reminders (needs sign-in). */
 const subscribePush = async () => {
-  if (!pushSupported() || !syncConfigured || !useSync.getState().user || Notification.permission !== 'granted') return;
+  if (!pushSupported() || !syncConfigured || !vapidPublicKey || !useSync.getState().user || Notification.permission !== 'granted') return;
   try {
     const reg = await navigator.serviceWorker.ready;
-    const sub =
-      (await reg.pushManager.getSubscription()) ??
-      (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(vapidPublicKey) }));
-    const ok = await saveSubscription(deviceId(), sub.toJSON());
+    const ok = await registerPush(deviceId(), reg);
     useNotify.setState({ push: ok });
   } catch {
     useNotify.setState({ push: false });

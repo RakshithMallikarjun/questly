@@ -2,29 +2,29 @@
 //
 // Each user's document (users/{uid}) holds:
 //   plan: [{ at, tag, title, body }]  written by the app whenever progress changes
-//   subs: { [deviceId]: PushSubscription }  one per phone with notifications on
+//   subs: { [deviceId]: { token } }  one Firebase Cloud Messaging token per phone
 //   sent: [tag]  reminders already delivered (written here)
 //
-// Needs two secrets: FIREBASE_SERVICE_ACCOUNT (JSON) and VAPID_PRIVATE_KEY.
+// Needs one secret: FIREBASE_SERVICE_ACCOUNT (the service account key, as JSON).
 
 import { cert, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import webpush from 'web-push';
+import { getMessaging } from 'firebase-admin/messaging';
 
-const VAPID_PUBLIC_KEY = 'BOPWhw1nDRa5UyHkwam8CFKfnMMMmVK-Vf_qA136VfTpArkYMHmVwYX8pyE9DGjgY5nKucWtjMbNEskB787RnnM';
 const LOOK_BACK = 45 * 60 * 1000; // scheduled runs can start late; still send reminders up to 45 min old
 const LOOK_AHEAD = 2 * 60 * 1000;
 const KEEP_SENT = 150;
 
-const { FIREBASE_SERVICE_ACCOUNT, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
-if (!FIREBASE_SERVICE_ACCOUNT || !VAPID_PRIVATE_KEY) {
-  console.log('Reminders are not set up yet (missing FIREBASE_SERVICE_ACCOUNT or VAPID_PRIVATE_KEY). Nothing to do.');
+const { FIREBASE_SERVICE_ACCOUNT } = process.env;
+if (!FIREBASE_SERVICE_ACCOUNT) {
+  console.log('Reminders are not set up yet (missing the FIREBASE_SERVICE_ACCOUNT secret). Nothing to do.');
   process.exit(0);
 }
 
 initializeApp({ credential: cert(JSON.parse(FIREBASE_SERVICE_ACCOUNT)) });
-webpush.setVapidDetails(VAPID_SUBJECT || 'https://github.com/RakshithMallikarjun/questly', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 const db = getFirestore();
+const messaging = getMessaging();
+const GONE = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-registration-token']);
 
 const now = Date.now();
 let sentCount = 0;
@@ -32,7 +32,7 @@ const users = await db.collection('users').get();
 
 for (const snap of users.docs) {
   const { plan = [], subs = {}, sent = [] } = snap.data();
-  const phones = Object.entries(subs).filter(([, s]) => s && s.endpoint);
+  const phones = Object.entries(subs).filter(([, s]) => s && s.token);
   if (!phones.length) continue;
   const already = new Set(sent);
   const due = plan.filter((r) => r.at <= now + LOOK_AHEAD && r.at > now - LOOK_BACK && !already.has(r.tag));
@@ -40,16 +40,20 @@ for (const snap of users.docs) {
 
   const dead = new Set();
   for (const r of due) {
-    const payload = JSON.stringify({ title: r.title, body: r.body, tag: r.tag });
     for (const [id, sub] of phones) {
       if (dead.has(id)) continue;
       try {
-        await webpush.sendNotification(sub, payload, { TTL: 3600, urgency: 'high' });
+        // Data-only message: the app's service worker (public/push-sw.js) shows it.
+        await messaging.send({
+          token: sub.token,
+          data: { title: r.title, body: r.body, tag: r.tag },
+          webpush: { headers: { TTL: '3600', Urgency: 'high' } },
+        });
         sentCount++;
       } catch (e) {
-        // 404/410: the phone turned notifications off or the app was removed.
-        if (e.statusCode === 404 || e.statusCode === 410) dead.add(id);
-        else console.warn(`Could not reach a device for ${snap.id}: ${e.statusCode ?? e.message}`);
+        // The phone turned notifications off or the app was removed.
+        if (GONE.has(e.code)) dead.add(id);
+        else console.warn(`Could not reach a device for ${snap.id}: ${e.code ?? e.message}`);
       }
     }
   }

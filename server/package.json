@@ -7,7 +7,6 @@
     "send": "node send-reminders.mjs"
   },
   "dependencies": {
-    "firebase-admin": "^13.10.0",
-    "web-push": "^3.6.7"
+    "firebase-admin": "^13.10.0"
   }
 }

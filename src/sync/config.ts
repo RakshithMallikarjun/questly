@@ -11,6 +11,7 @@ export const firebaseConfig = {
   appId: '1:94384717938:web:c513b320788f35779f42eb',
 };
 
-// Public key for phone notifications (Web Push). The matching private key is
-// stored as the VAPID_PRIVATE_KEY secret in GitHub, never in this repo.
-export const vapidPublicKey = 'BOPWhw1nDRa5UyHkwam8CFKfnMMMmVK-Vf_qA136VfTpArkYMHmVwYX8pyE9DGjgY5nKucWtjMbNEskB787RnnM';
+// Web Push key for phone notifications, from Firebase console: Project
+// settings > Cloud Messaging > Web Push certificates. Leave empty to show
+// reminders only while the app is open.
+export const vapidPublicKey = '';
