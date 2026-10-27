@@ -30,6 +30,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg}'],
         // Adds the handler that shows reminder notifications.
         importScripts: ['push-sw.js'],
+        // Let file downloads (like the Health shortcut) reach the server instead of opening the app.
+        navigateFallbackDenylist: [/\.shortcut$/],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
           {
