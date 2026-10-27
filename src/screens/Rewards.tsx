@@ -17,6 +17,7 @@ export function Rewards() {
   const [editing, setEditing] = useState(false);
   const day = g.today?.day ?? '';
   const restUsed = day ? restDayUsedThisWeek(g, day) : false;
+  const [allBadges, setAllBadges] = useState(false);
   const unlocked = BADGES.filter((b) => g.badges[b.id]).length;
   const shown = badge ? BADGES.find((b) => b.id === badge) : null;
 
@@ -90,7 +91,7 @@ export function Rewards() {
         <span className="muted small">{fmt(t.rewards.unlocked, { n: unlocked, total: BADGES.length })}</span>
       </div>
       <div className="badges">
-        {BADGES.map((b) => {
+        {(allBadges ? BADGES : [...BADGES.filter((b) => g.badges[b.id]), ...BADGES.filter((b) => !g.badges[b.id])].slice(0, 8)).map((b) => {
           const on = !!g.badges[b.id];
           return (
             <button key={b.id} className="badge" onClick={() => setBadge(b.id)} aria-label={`${b.name}: ${b.desc}${on ? ', unlocked' : ', locked'}`}>
@@ -102,6 +103,7 @@ export function Rewards() {
           );
         })}
       </div>
+      <button className="btn btn-text btn-sm" onClick={() => setAllBadges((v) => !v)}>{allBadges ? 'Show fewer' : `See all ${BADGES.length} badges`}</button>
 
       {g.purchases.length > 0 && (
         <div className="stack" style={{ gap: 6 }}>

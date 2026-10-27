@@ -22,6 +22,7 @@ interface Store {
   resist: (habitId: string) => void;
   addHabit: (c: E.HabitChoice) => void;
   removeHabit: (id: string) => void;
+  updateHabit: (id: string, patch: Parameters<typeof E.updateHabit>[2]) => void;
   buy: (id: string) => void;
   rest: () => void;
   addReward: (name: string, cost: number) => void;
@@ -61,6 +62,7 @@ export const useStore = create<Store>()(
         resist: (id) => run((s, now) => E.resistUrge(s, id, now)),
         addHabit: (c) => run((s, now) => E.addHabit(s, c, now)),
         removeHabit: (id) => run((s, now) => E.removeHabit(s, id, now)),
+        updateHabit: (id, patch) => run((s, now) => E.updateHabit(s, id, patch, now)),
         buy: (id) => run((s, now) => E.buyReward(s, id, now)),
         rest: () => run((s, now) => E.takeRestDay(s, now)),
         addReward: (name, cost) => run((s, now) => E.addReward(s, name, cost, now)),
