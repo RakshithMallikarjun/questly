@@ -64,8 +64,10 @@ export function HealthSetup() {
             </button>
           </Step>
           <Step n={2} title="Add the Questly Health shortcut">
-            <span className="muted small">Tap below, then "Add Shortcut". When it asks for your key, paste it.</span>
-            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} style={{ textDecoration: 'none' }}>Get the shortcut</a>
+            <span className="muted small">
+              Tap below. Safari asks to download it: tap <b>Download</b>, then open it from Safari's downloads (the ↓ arrow) and tap <b>Add Shortcut</b>. When it asks for your key, paste it.
+            </span>
+            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>Get the shortcut</a>
           </Step>
           <Step n={3} title="Run it once">
             <span className="muted small">In the Shortcuts app, tap "Questly Health" and allow access to Health. Come back here and you'll see today's numbers.</span>
