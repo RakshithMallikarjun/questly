@@ -58,7 +58,7 @@ def add(identifier, params, ref=None):
 def find_health(kind, date_filter, sort_oldest=False):
     ref = uid()
     templates = [
-        {'Property': 'Type', 'Operator': 4, 'Removable': False, 'Values': {'Enumeration': kind}},
+        {'Property': 'Type', 'Operator': 4, 'Removable': False, 'Values': {'Enumeration': {'Value': kind, 'WFSerializationType': 'WFStringSubstitutableState'}}},
         date_filter,
     ]
     params = {
