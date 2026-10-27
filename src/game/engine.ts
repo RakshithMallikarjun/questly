@@ -8,10 +8,10 @@ import { CHALLENGES, CHALLENGE_BY_ID, CHALLENGE_COINS, CHALLENGE_XP } from './co
 import { presetFor } from './content/habits';
 import { QUEST_BY_ID } from './content/quests';
 import { addDays, daysBetween, gameDay, weekStart } from './date';
-import { generateBoard, isRequired } from './generator';
+import { checkinTitle, generateBoard, isRequired } from './generator';
 import { hash } from './rng';
 import type {
-  AreaId, DayRecord, Difficulty, GameEvent, GameState, Habit, HabitMode, Profile, QuestInstance, StatId, Tier,
+  AreaId, DayRecord, Difficulty, GameEvent, GameState, Habit, HabitMode, LimitPeriod, Profile, QuestInstance, StatId, Tier,
 } from './types';
 import { CLEAR_BONUS_COINS, CLEAR_BONUS_XP, URGE_XP, coinsFor, levelFor, streakMultiplier } from './xp';
 
@@ -83,6 +83,7 @@ export interface HabitChoice {
   mode: HabitMode;
   limit?: number;
   unit?: string;
+  period?: LimitPeriod;
 }
 
 export const makeHabit = (c: HabitChoice, day: string): Habit => ({
@@ -92,6 +93,7 @@ export const makeHabit = (c: HabitChoice, day: string): Habit => ({
   mode: c.mode,
   limit: c.limit,
   unit: c.unit,
+  period: c.period,
   cleanSince: day,
   best: 0,
   slips: [],
@@ -113,7 +115,7 @@ export const finishOnboarding = (base: GameState, profile: Profile, habits: Habi
   s.goals = profile.areas.map((area) => base.goals.find((g) => g.area === area && !g.completedAt) ?? { area, level: 0, start: day, progress: 0 });
   // Keep the history of habits you were already tracking (e.g. when retaking the questionnaire).
   s.habits = habits.map((h) => base.habits.find((x) => x.presetId === h.presetId && x.name === h.name) ?? makeHabit(h, day))
-    .map((h, i) => ({ ...h, mode: habits[i].mode, limit: habits[i].limit, unit: habits[i].unit }));
+    .map((h, i) => ({ ...h, mode: habits[i].mode, limit: habits[i].limit, unit: habits[i].unit, period: habits[i].period }));
   s.lastTierCheck = day;
   s.today = null;
   return ensureToday(s, now).state;
@@ -433,6 +435,35 @@ export const logAmount = (input: GameState, habitId: string, amount: number, now
   const day = s.today?.day ?? gameDay(now, s.profile.resetHour);
   if (!h) return { state: input, events: [] };
   h.amounts[day] = Math.max(0, (h.amounts[day] ?? 0) + amount);
+  s.updatedAt = now.getTime();
+  return { state: s, events: [] };
+};
+
+/** First day of the limit period (day, Monday-start week, or month) containing `day`. */
+export const periodStart = (day: string, period: LimitPeriod = 'day'): string =>
+  period === 'week' ? weekStart(day) : period === 'month' ? `${day.slice(0, 8)}01` : day;
+
+/** Amount logged so far in the current limit period. */
+export const periodTotal = (h: Habit, day: string): number => {
+  const from = periodStart(day, h.period);
+  return Object.entries(h.amounts).reduce((n, [d, v]) => (d >= from && d <= day ? n + v : n), 0);
+};
+
+/** Change a habit's mode, limit or period. */
+export const updateHabit = (input: GameState, habitId: string, patch: Partial<Pick<Habit, 'mode' | 'limit' | 'unit' | 'period'>>, now: Date): Result => {
+  const s = clone(input);
+  const h = s.habits.find((x) => x.id === habitId);
+  if (!h) return { state: input, events: [] };
+  Object.assign(h, patch);
+  if (h.mode === 'limit') {
+    h.limit = Math.max(1, h.limit ?? 1);
+    h.unit = h.unit ?? 'times';
+  }
+  // Refresh today's check-in wording.
+  if (s.today) {
+    const title = checkinTitle(h);
+    s.today.queue = s.today.queue.map((q) => (q.kind === 'checkin' && q.habitId === h.id ? { ...q, title } : q));
+  }
   s.updatedAt = now.getTime();
   return { state: s, events: [] };
 };

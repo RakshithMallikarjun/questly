@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { HABIT_PRESETS } from '../game/content/habits';
-import { cleanDays } from '../game/engine';
-import type { Habit } from '../game/types';
+import { cleanDays, periodTotal } from '../game/engine';
+import type { Habit, LimitPeriod } from '../game/types';
+import { LimitFields, periodWord } from '../components/LimitFields';
 import { Icon } from '../components/Icon';
 import { SlipSheet } from '../components/SlipSheet';
 import { UrgeBreaker } from '../components/UrgeBreaker';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
 
-function HabitCard({ h, day, onTempted, onSlip }: { h: Habit; day: string; onTempted: () => void; onSlip: () => void }) {
+function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: string; onTempted: () => void; onSlip: () => void; onEdit: () => void }) {
   const t = strings();
   const logAmount = useStore((s) => s.logAmount);
   const clean = cleanDays(h, day);
   const nextMilestone = [1, 7, 30, 90, 365].find((m) => m > clean);
   const answered = h.checkins[day];
-  const amount = h.amounts[day] ?? 0;
+  const amount = periodTotal(h, day);
   const limit = h.limit ?? 1;
   const pct = Math.min(100, Math.round((amount / limit) * 100));
   const over = amount > limit;
@@ -53,7 +54,7 @@ function HabitCard({ h, day, onTempted, onSlip }: { h: Habit; day: string; onTem
       {h.mode === 'limit' && (
         <>
           <span style={{ fontFamily: 'var(--display)', fontSize: 26 }}>
-            {amount}<span className="muted" style={{ fontSize: 15 }}> / {limit} {h.unit} today</span>
+            {amount}<span className="muted" style={{ fontSize: 15 }}> / {limit} {h.unit} {periodWord(h.period)}</span>
           </span>
           <div className="bar" style={{ height: 14, background: 'var(--bg)' }}>
             <span style={{ width: `${pct}%`, background: over ? 'var(--pink)' : pct > 75 ? 'var(--gold)' : 'var(--blue)' }} />
@@ -62,12 +63,13 @@ function HabitCard({ h, day, onTempted, onSlip }: { h: Habit; day: string; onTem
             {(h.unit === 'min' ? [5, 15] : [1]).map((n) => (
               <button key={n} className="btn btn-ghost btn-sm grow" onClick={() => logAmount(h.id, n)}>+{n} {h.unit}</button>
             ))}
-            {amount > 0 && <button className="btn btn-ghost btn-sm" onClick={() => logAmount(h.id, h.unit === 'min' ? -5 : -1)} aria-label="Remove some">−</button>}
+            {(h.amounts[day] ?? 0) > 0 && <button className="btn btn-ghost btn-sm" onClick={() => logAmount(h.id, h.unit === 'min' ? -5 : -1)} aria-label="Remove some">−</button>}
           </div>
         </>
       )}
 
       <button className="btn btn-pink" onClick={onTempted}>{t.quit.tempted}</button>
+      <button className="btn btn-text" style={{ height: 36 }} onClick={onEdit}>{h.mode === 'limit' ? 'Change limit' : 'Switch to cutting down'}</button>
       {answered !== 'slip' && <button className="btn btn-text" onClick={onSlip}>{t.quit.slip}</button>}
 
       {top && (
@@ -88,7 +90,8 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
   const existing = useStore((s) => s.game.habits.map((h) => h.presetId));
   const [name, setName] = useState('');
   const [mode, setMode] = useState<'quit' | 'limit'>('quit');
-  const [limit, setLimit] = useState(30);
+  const [limit, setLimit] = useState(3);
+  const [period, setPeriod] = useState<LimitPeriod>('day');
   const presets = HABIT_PRESETS.filter((p) => !existing.includes(p.id));
   return (
     <div className="overlay" onClick={onClose}>
@@ -106,8 +109,34 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
           <button className={`btn btn-sm grow ${mode === 'quit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('quit')}>Quit</button>
           <button className={`btn btn-sm grow ${mode === 'limit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('limit')}>Cut down</button>
         </div>
-        {mode === 'limit' && <label className="field">Daily limit (times)<input type="number" min={1} value={limit} onChange={(e) => setLimit(Math.max(1, Number(e.target.value) || 1))} /></label>}
-        <button className="btn btn-gold" disabled={!name.trim()} onClick={() => { addHabit({ presetId: 'custom', name: name.trim(), mode, limit: mode === 'limit' ? limit : undefined, unit: mode === 'limit' ? 'times' : undefined }); onClose(); }}>Add</button>
+        {mode === 'limit' && <LimitFields limit={limit} unit="times" period={period} onChange={(v) => { setLimit(v.limit); setPeriod(v.period); }} />}
+        <button className="btn btn-gold" disabled={!name.trim()} onClick={() => { addHabit({ presetId: 'custom', name: name.trim(), mode, limit: mode === 'limit' ? limit : undefined, unit: mode === 'limit' ? 'times' : undefined, period: mode === 'limit' ? period : undefined }); onClose(); }}>Add</button>
+        <button className="btn btn-text" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function EditHabitSheet({ h, onClose }: { h: Habit; onClose: () => void }) {
+  const updateHabit = useStore((s) => s.updateHabit);
+  const [mode, setMode] = useState(h.mode);
+  const [limit, setLimit] = useState(h.limit ?? 1);
+  const [period, setPeriod] = useState<LimitPeriod>(h.period ?? 'day');
+  const save = () => {
+    updateHabit(h.id, mode === 'limit' ? { mode, limit, period, unit: h.unit ?? 'times' } : { mode });
+    onClose();
+  };
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={`Edit ${h.name}`} onClick={(e) => e.stopPropagation()}>
+        <h2>{h.name}</h2>
+        <div className="row">
+          <button className={`btn btn-sm grow ${mode === 'quit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('quit')}>Quit</button>
+          <button className={`btn btn-sm grow ${mode === 'limit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('limit')}>Cut down</button>
+        </div>
+        {mode === 'limit' && <LimitFields limit={limit} unit={h.unit} period={period} onChange={(v) => { setLimit(v.limit); setPeriod(v.period); }} />}
+        <span className="muted small">Your clean-day streak and history stay as they are.</span>
+        <button className="btn btn-gold" onClick={save}>Save</button>
         <button className="btn btn-text" onClick={onClose}>Cancel</button>
       </div>
     </div>
@@ -120,6 +149,7 @@ export function Quit() {
   const [urge, setUrge] = useState<Habit | null>(null);
   const [slip, setSlip] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Habit | null>(null);
   const day = g.today?.day ?? '';
   return (
     <div className="screen">
@@ -129,12 +159,13 @@ export function Quit() {
       </div>
       {g.habits.length === 0 && <p className="soft">{t.quit.none}</p>}
       {g.habits.map((h) => (
-        <HabitCard key={h.id} h={h} day={day} onTempted={() => setUrge(h)} onSlip={() => setSlip(h.id)} />
+        <HabitCard key={h.id} h={h} day={day} onTempted={() => setUrge(h)} onSlip={() => setSlip(h.id)} onEdit={() => setEditing(h)} />
       ))}
       <button className="btn btn-dashed" onClick={() => setAdding(true)}>{t.quit.add}</button>
       {urge && <UrgeBreaker habit={urge} onClose={() => setUrge(null)} />}
       {slip && <SlipSheet habitId={slip} onClose={() => setSlip(null)} />}
       {adding && <AddHabitSheet onClose={() => setAdding(false)} />}
+      {editing && <EditHabitSheet h={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }

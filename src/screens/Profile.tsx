@@ -4,6 +4,7 @@ import type { AreaId, Difficulty, Energy, GameState, Profile as P, Tier } from '
 import { Avatar } from '../components/HeroHeader';
 import { Icon } from '../components/Icon';
 import { ReminderSettings } from '../components/ReminderSettings';
+import { perWord } from '../components/LimitFields';
 import { AddHabitSheet } from './Quit';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
@@ -151,7 +152,7 @@ export function Profile() {
       <Section title={t.profile.habits}>
         {g.habits.map((h) => (
           <div key={h.id} className="between">
-            <span>{h.name} <span className="muted tiny">{h.mode === 'limit' ? `max ${h.limit} ${h.unit}` : 'quit'}</span></span>
+            <span>{h.name} <span className="muted tiny">{h.mode === 'limit' ? `max ${h.limit} ${h.unit} ${perWord(h.period)}` : 'quit'}</span></span>
             <button className="icon-btn" aria-label={`Stop tracking ${h.name}`} onClick={() => confirm(`Stop tracking ${h.name}?`) && st.removeHabit(h.id)}><Icon name="trash" size={20} /></button>
           </div>
         ))}

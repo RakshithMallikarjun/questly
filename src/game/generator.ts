@@ -3,7 +3,7 @@ import { presetFor } from './content/habits';
 import { QUESTS, questsFor } from './content/quests';
 import { addDays } from './date';
 import { pick, rng, shuffle } from './rng';
-import type { AreaId, GameState, QuestDef, QuestInstance, Tier, TimeOfDay } from './types';
+import type { AreaId, GameState, Habit, QuestDef, QuestInstance, Tier, TimeOfDay } from './types';
 import { CHECKIN_XP, TIER_XP, coinsFor } from './xp';
 
 /** Daily quests (not counting main, bonus and check-ins) for each time budget. */
@@ -125,8 +125,7 @@ export const generateBoard = (s: GameState, day: string): QuestInstance[] => {
 
   // Check-ins for each habit you're breaking.
   s.habits.forEach((h) => {
-    const title = h.mode === 'limit' ? `Stayed under ${h.limit} ${h.unit} of ${h.name.toLowerCase()} today?` : `Stayed clear of ${h.name.toLowerCase()} today?`;
-    list.push({ key: `checkin-${h.id}`, kind: 'checkin', habitId: h.id, title, why: 'Be honest. Every clean day counts.', xp: CHECKIN_XP, coins: coinsFor(CHECKIN_XP) });
+    list.push({ key: `checkin-${h.id}`, kind: 'checkin', habitId: h.id, title: checkinTitle(h), why: 'Be honest. Every clean day counts.', xp: CHECKIN_XP, coins: coinsFor(CHECKIN_XP) });
   });
 
   // Bonus quest: optional, something fun or new from any area.
@@ -138,6 +137,17 @@ export const generateBoard = (s: GameState, day: string): QuestInstance[] => {
   }
 
   return list;
+};
+
+/** The daily check-in question for a habit. */
+export const checkinTitle = (h: Habit): string => {
+  const name = h.name.toLowerCase();
+  if (h.mode !== 'limit') return `Stayed clear of ${name} today?`;
+  const unit = h.limit === 1 && h.unit && h.unit !== 'min' ? h.unit.replace(/s$/, '') : h.unit;
+  const amount = `${h.limit} ${unit}`;
+  if (h.period === 'week') return `Still within ${amount} of ${name} this week?`;
+  if (h.period === 'month') return `Still within ${amount} of ${name} this month?`;
+  return `Stayed under ${amount} of ${name} today?`;
 };
 
 export const isRequired = (q: QuestInstance) => q.kind !== 'bonus';
