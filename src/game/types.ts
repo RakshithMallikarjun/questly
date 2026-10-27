@@ -98,6 +98,8 @@ export interface Profile {
   difficulty: Difficulty;
   motivations: string[];
   reminders: Reminders;
+  /** Secret key the Apple Health shortcut uses to send data (see Profile). */
+  healthKey?: string;
   /** Your own "finish by" times, keyed by quest id (or `checkin:<habitId>`). */
   dueTimes?: Record<string, string>;
   resetHour: number;

@@ -5,6 +5,7 @@ import { Avatar } from '../components/HeroHeader';
 import { Icon } from '../components/Icon';
 import { ReminderSettings } from '../components/ReminderSettings';
 import { SwitchRow } from '../components/Switch';
+import { HealthSetup } from '../components/HealthSetup';
 import { perWord } from '../components/LimitFields';
 import { AddHabitSheet } from './Quit';
 import { strings } from '../i18n';
@@ -26,7 +27,7 @@ function Segmented<T extends string | number>({ value, options, onPick }: { valu
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-type Page = 'reminders' | 'quests' | 'areas' | 'habits' | 'custom' | 'data';
+type Page = 'reminders' | 'health' | 'quests' | 'areas' | 'habits' | 'custom' | 'data';
 
 const clock = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -36,6 +37,12 @@ const reminderSummary = (r: P['reminders']) => {
   const parts = [r.morning && clock(r.morning), r.evening && clock(r.evening)].filter(Boolean) as string[];
   if (r.perQuest !== false) parts.push('before each quest');
   return parts.length ? parts.join(' · ') : 'Off';
+};
+
+const healthSub = (g: GameState) => {
+  if (!g.profile.healthKey) return 'Auto-complete steps, sleep and workout quests';
+  const last = Object.keys(g.health).sort().at(-1);
+  return last ? `Last data ${new Date(`${last}T12:00`).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : 'Waiting for the first sync';
 };
 
 export function Profile() {
@@ -80,6 +87,7 @@ export function Profile() {
 
   const pages: { id: Page; icon: string; color: string; label: string; sub: string }[] = [
     { id: 'reminders', icon: 'clock', color: 'var(--purple)', label: t.remind.section, sub: reminderSummary(p.reminders) },
+    { id: 'health', icon: 'heart', color: 'var(--pink)', label: 'Apple Health', sub: healthSub(g) },
     { id: 'quests', icon: 'today', color: 'var(--gold)', label: 'Quest settings', sub: `${p.difficulty[0].toUpperCase()}${p.difficulty.slice(1)} · ${p.minutes} min a day` },
     { id: 'areas', icon: 'progress', color: 'var(--green)', label: t.profile.areas, sub: p.areas.map((a) => AREA_BY_ID[a].label).join(', ') },
     { id: 'habits', icon: 'quit', color: 'var(--pink)', label: t.profile.habits, sub: g.habits.length ? g.habits.map((h) => h.name).join(', ') : 'None yet' },
@@ -97,6 +105,8 @@ export function Profile() {
         </div>
 
         {page === 'reminders' && <ReminderSettings />}
+
+        {page === 'health' && <HealthSetup />}
 
         {page === 'quests' && (
           <div className="card stack">
