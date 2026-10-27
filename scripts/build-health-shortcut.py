@@ -16,6 +16,7 @@ import uuid
 PROJECT = 'questly-2a6c9'
 API_KEY = 'AIzaSyBe8Jnq7nkbFQhxMvPEX3hrtuULpJ3FbvM'  # public web key, same as src/sync/config.ts
 OBJ = '￼'
+KEY_FILE = 'questly-key.txt'
 
 actions = []
 
@@ -84,8 +85,23 @@ def total(samples, name):
     return add('is.workflow.actions.statistics', {'WFStatisticsOperation': 'Sum', 'WFInput': var(samples, name)}, uid())
 
 
-# 0. Your Questly key (asked when the shortcut is added).
-key = add('is.workflow.actions.gettext', {'WFTextActionText': 'PASTE YOUR QUESTLY KEY'}, uid())
+# 0-3. Your Questly key. The app's "Connect" button runs this shortcut with the
+# key as input; it is saved to iCloud Drive/Shortcuts/questly-key.txt and read
+# back on every later run (the automations run without input).
+INPUT = {'Value': {'Type': 'ExtensionInput'}, 'WFSerializationType': 'WFTextTokenAttachment'}
+group = uid()
+add('is.workflow.actions.conditional', {
+    'GroupingIdentifier': group, 'WFControlFlowMode': 0, 'WFCondition': 100, 'WFInput': {'Type': 'Variable', 'Variable': INPUT},
+})
+add('is.workflow.actions.documentpicker.save', {
+    'WFInput': INPUT, 'WFAskWhereToSave': False, 'WFSaveFileOverwrite': True,
+    'WFFileDestinationPath': KEY_FILE,
+}, uid())
+add('is.workflow.actions.conditional', {'GroupingIdentifier': group, 'WFControlFlowMode': 2}, uid())
+key_file = add('is.workflow.actions.documentpicker.open', {
+    'WFGetFilePath': KEY_FILE, 'WFShowFilePicker': False, 'WFFileErrorIfNotFound': True,
+}, uid())
+key = add('is.workflow.actions.gettext', {'WFTextActionText': text(out(key_file, 'File'))}, uid())
 # 1-2. Today's date and day-of-week slot.
 day = add('is.workflow.actions.format.date', {
     'WFDateFormatStyle': 'Custom', 'WFDateFormat': 'yyyyMMdd',
@@ -151,16 +167,12 @@ shortcut = {
     'WFWorkflowMinimumClientVersion': 900,
     'WFWorkflowMinimumClientVersionString': '900',
     'WFWorkflowIcon': {'WFWorkflowIconStartColor': 4282601983, 'WFWorkflowIconGlyphNumber': 59511},
-    'WFWorkflowImportQuestions': [{
-        'ActionIndex': 0, 'Category': 'Parameter', 'DefaultValue': '',
-        'ParameterKey': 'WFTextActionText',
-        'Text': 'Paste your Questly key (Questly > Profile > Apple Health > Copy key)',
-    }],
-    'WFWorkflowInputContentItemClasses': [],
+    'WFWorkflowImportQuestions': [],
+    'WFWorkflowInputContentItemClasses': ['WFStringContentItem'],
     'WFWorkflowOutputContentItemClasses': [],
     'WFWorkflowTypes': [],
     'WFWorkflowHasOutputFallback': False,
-    'WFWorkflowHasShortcutInputVariables': False,
+    'WFWorkflowHasShortcutInputVariables': True,
     'WFQuickActionSurfaces': [],
 }
 

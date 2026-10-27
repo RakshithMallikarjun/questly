@@ -1,9 +1,12 @@
-import { useState } from 'react';
 import { newHealthKey } from '../game/health';
 import { useStore } from '../store';
-import { Icon } from './Icon';
 
 const SHORTCUT_URL = `${import.meta.env.BASE_URL}questly-health.shortcut`;
+const SHORTCUT_NAME = 'Questly Health';
+
+/** Runs the shortcut with your key, which it saves for its later automatic runs. */
+const connectUrl = (key: string) =>
+  `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(key)}`;
 
 function Step({ n, title, children }: { n: number; title: string; children?: React.ReactNode }) {
   return (
@@ -22,20 +25,8 @@ export function HealthSetup() {
   const key = useStore((s) => s.game.profile.healthKey);
   const health = useStore((s) => s.game.health);
   const updateProfile = useStore((s) => s.updateProfile);
-  const [copied, setCopied] = useState(false);
   const last = Object.keys(health).sort().at(-1);
   const h = last ? health[last] : null;
-
-  const copy = async () => {
-    if (!key) return;
-    try {
-      await navigator.clipboard.writeText(key);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      prompt('Copy your Questly key:', key);
-    }
-  };
 
   return (
     <>
@@ -57,22 +48,20 @@ export function HealthSetup() {
         <button className="btn btn-gold" onClick={() => updateProfile({ healthKey: newHealthKey() })}>Set up Apple Health</button>
       ) : (
         <div className="card stack" style={{ gap: 18 }}>
-          <span className="label-caps muted">On your iPhone, in Safari</span>
-          <Step n={1} title="Copy your Questly key">
-            <button className="btn btn-ghost btn-sm" onClick={() => void copy()}>
-              <Icon name={copied ? 'check' : 'download'} size={18} /> {copied ? 'Copied!' : 'Copy key'}
-            </button>
-          </Step>
-          <Step n={2} title="Add the Questly Health shortcut">
+          <span className="label-caps muted">On your iPhone</span>
+          <Step n={1} title="Add the Questly Health shortcut">
             <span className="muted small">
-              Tap below. Safari asks to download it: tap <b>Download</b>, then open it from Safari's downloads (the ↓ arrow) and tap <b>Add Shortcut</b>. When it asks for your key, paste it.
+              Tap below and choose <b>Download</b>. Then tap the ↓ arrow next to the address bar, open <b>Questly Health</b> and tap <b>Add Shortcut</b>.
             </span>
-            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>Get the shortcut</a>
+            <a className="btn btn-pink btn-sm" href={SHORTCUT_URL} download="Questly Health.shortcut" target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>Get the shortcut</a>
           </Step>
-          <Step n={3} title="Run it once">
-            <span className="muted small">In the Shortcuts app, tap "Questly Health" and allow access to Health. Come back here and you'll see today's numbers.</span>
+          <Step n={2} title="Connect it to Questly">
+            <span className="muted small">
+              Tap below. The Shortcuts app opens and runs it once. Allow access to Health and to save a file. Then come back here to see today's numbers.
+            </span>
+            <a className="btn btn-gold btn-sm" href={connectUrl(key)} style={{ textDecoration: 'none' }}>Connect</a>
           </Step>
-          <Step n={4} title="Make it automatic">
+          <Step n={3} title="Make it automatic">
             <span className="muted small">
               In Shortcuts, open <b>Automation</b> → <b>+</b> → <b>Time of Day</b>. Pick 9:00 PM, Daily, choose <b>Run Immediately</b>, then pick "Questly Health". Add a second one at 7:00 AM to send last night's sleep early.
             </span>
@@ -81,7 +70,7 @@ export function HealthSetup() {
       )}
 
       {key && (
-        <button className="btn btn-text btn-sm" onClick={() => confirm('Make a new key? You will need to add the shortcut again.') && updateProfile({ healthKey: newHealthKey() })}>
+        <button className="btn btn-text btn-sm" onClick={() => confirm('Make a new key? You will need to tap Connect again.') && updateProfile({ healthKey: newHealthKey() })}>
           Make a new key
         </button>
       )}
