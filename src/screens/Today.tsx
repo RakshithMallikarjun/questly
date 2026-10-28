@@ -295,6 +295,10 @@ function UndoToast({ xp, onUndo, onDone }: { xp: number; onUndo: () => void; onD
     done.current = onDone;
   });
   useEffect(() => {
+    useFx.setState({ undoOpen: true });
+    return () => useFx.setState({ undoOpen: false });
+  }, []);
+  useEffect(() => {
     if (hold) return;
     const id = setTimeout(() => done.current(), 10_000);
     return () => clearTimeout(id);

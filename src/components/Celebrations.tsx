@@ -5,7 +5,7 @@ import { BADGE_BY_ID } from '../game/content/badges';
 import { levelFor, titleFor } from '../game/xp';
 import { useStore } from '../store';
 import { stagesFor } from '../game/content/journeys';
-import { burst, buzz, chime, focusQuest } from '../fx';
+import { burst, buzz, chime, focusQuest, useFx } from '../fx';
 import { Star } from './Icon';
 import { Avatar } from './HeroHeader';
 import { EVOLVE_LEVELS, ITEM_BY_ID, SPECIES, speciesFor, stageForLevel, STAGE_NAMES } from '../game/content/buddy';
@@ -17,6 +17,7 @@ export function Celebrations() {
   const pop = useStore((s) => s.popEvent);
   const g = useStore((s) => s.game);
   const e = events[0];
+  const undoOpen = useFx((s) => s.undoOpen);
   const big = e && (e.type === 'levelUp' || e.type === 'unlock' || e.type === 'goal' || e.type === 'journeyMilestone' || e.type === 'journeyDone');
   // Several badges at once are shown together in one message.
   let badgeRun = 0;
@@ -24,7 +25,7 @@ export function Celebrations() {
 
   // Confetti is saved for the big moments: level-up, day cleared (and the chest).
   useEffect(() => {
-    if (!e) return;
+    if (!e || (!big && undoOpen)) return;
     const sound = g.profile.sound;
     const vibrate = g.profile.vibrate;
     if (e.type === 'levelUp') burst(true);
@@ -36,7 +37,7 @@ export function Celebrations() {
       chime(sound, [659, 784, 988]);
       buzz(vibrate, [30, 40, 60]);
     }
-  }, [e, big, g.profile.sound, g.profile.vibrate]);
+  }, [e, big, undoOpen, g.profile.sound, g.profile.vibrate]);
 
   // Small messages close by themselves, but never while you're reading or focused on them.
   // Holding is tied to one message, so the next message closes on its own again.
@@ -44,10 +45,10 @@ export function Celebrations() {
   const hold = !!e && heldEvent === e;
   const setHold = (on: boolean) => setHeldEvent(on ? e : null);
   useEffect(() => {
-    if (!e || big || hold) return;
+    if (!e || big || hold || undoOpen) return;
     const id = setTimeout(() => pop(Math.max(1, badgeRun)), e.type === 'badge' || e.type === 'dayCleared' || e.type === 'cleanDay' ? 4500 : 3500);
     return () => clearTimeout(id);
-  }, [e, big, hold, pop, badgeRun]);
+  }, [e, big, hold, undoOpen, pop, badgeRun]);
 
   if (!e) return null;
 
@@ -159,6 +160,9 @@ export function Celebrations() {
     : e.type === 'shieldUsed' ? 'A streak shield saved your streak!'
     : e.type === 'tierUp' ? `${e.label} quests just got harder. You're ready.`
     : 'Nice!';
+
+  // Small messages wait until the Undo bar has gone, so the two never overlap.
+  if (undoOpen) return null;
 
   return (
     <div className="toast-wrap" role="status">

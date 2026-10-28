@@ -110,9 +110,11 @@ export const floatText = (from: DOMRect, text: string, color = '#FFC23D') => {
 };
 
 /** Short-lived UI moments, such as the companion cheering after a quest. */
-export const useFx = create<{ cheerAt: number; line: string | null; cheer: (line?: string) => void }>((set) => ({
+export const useFx = create<{ cheerAt: number; line: string | null; cheer: (line?: string) => void; undoOpen: boolean }>((set) => ({
   cheerAt: 0,
   line: null,
+  /** True while the Undo bar is showing; small messages wait for it so they never overlap. */
+  undoOpen: false,
   cheer: (line) => set({ cheerAt: Date.now(), line: line ?? null }),
 }));
 
