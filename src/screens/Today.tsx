@@ -21,7 +21,7 @@ import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
 import { JourneyCard } from './Journey';
 
 const colorFor = (q: QuestInstance) =>
-  q.area && q.kind !== 'checkin' ? AREA_BY_ID[q.area].color : q.kind === 'journey' ? '#5EE3C1' : q.kind === 'checkin' ? 'var(--blue)' : q.kind === 'bonus' ? 'var(--pink)' : 'var(--gold)';
+  q.area && q.kind !== 'checkin' ? AREA_BY_ID[q.area].color : q.kind === 'journey' ? 'var(--teal)' : q.kind === 'checkin' ? 'var(--blue)' : q.kind === 'bonus' ? 'var(--pink)' : 'var(--gold)';
 
 export const iconFor = (q: QuestInstance) => (q.kind === 'journey' ? 'journey' : q.kind === 'checkin' ? 'checkin' : q.area ?? 'bonus');
 
@@ -133,7 +133,7 @@ export function Today() {
                   buzz(g.profile.vibrate, 10);
                 }}
               >
-                <AreaIcon name={iconFor(x)} size={18} color={done ? '#17112B' : c} stroke={2.4} />
+                <AreaIcon name={iconFor(x)} size={18} color={done ? 'var(--on-accent)' : c} stroke={2.4} />
                 {done && <span className="qs-tick"><Icon name="check" size={10} color="#fff" stroke={4} /></span>}
               </button>
             );
@@ -151,7 +151,7 @@ export function Today() {
           </div>
           <div className="quest-main">
             <div className="quest-emblem" style={{ background: colorFor(q) }}>
-              <AreaIcon name={iconFor(q)} size={34} color="#17112B" stroke={2.2} />
+              <AreaIcon name={iconFor(q)} size={34} color="var(--on-accent)" stroke={2.2} />
             </div>
             <div className="quest-title">{q.title}</div>
           </div>

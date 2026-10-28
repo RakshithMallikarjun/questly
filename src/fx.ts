@@ -9,6 +9,15 @@ export const setCalm = (on: boolean) => {
   calm = on;
   document.documentElement.classList.toggle('calm', on);
 };
+/** Apply a colour theme to the page. 'auto' follows the phone's light or dark setting. */
+export const applyTheme = (choice: string | undefined) => {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = !choice || choice === 'auto' ? (dark ? 'ocean' : 'daylight') : choice;
+  document.documentElement.dataset.theme = theme;
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
+};
+
 export const isCalm = () => calm || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const burst = (big = false, origin?: { x: number; y: number }) => {
@@ -89,7 +98,7 @@ export const flyCoins = (from: DOMRect, n = 6) => {
 };
 
 /** A label like "+25 XP" floats up and fades. */
-export const floatText = (from: DOMRect, text: string, color = '#FFC23D') => {
+export const floatText = (from: DOMRect, text: string, color = 'var(--gold)') => {
   if (isCalm()) return;
   const el = document.createElement('div');
   el.className = 'fx-float';

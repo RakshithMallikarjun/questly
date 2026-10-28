@@ -12,7 +12,7 @@ export interface AreaDef {
 
 export const AREAS: AreaDef[] = [
   {
-    id: 'fitness', label: 'Fitness', short: 'Fi', color: '#FF7A2F', stat: 'strength',
+    id: 'fitness', label: 'Fitness', short: 'Fi', color: 'var(--orange)', stat: 'strength',
     goals: [
       { title: 'Move your body 3 times a week', target: 12 },
       { title: 'Work out 4 times a week', target: 16 },
@@ -21,7 +21,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'sleep', label: 'Sleep', short: 'Sl', color: '#8C7BFF', stat: 'vitality',
+    id: 'sleep', label: 'Sleep', short: 'Sl', color: 'var(--purple)', stat: 'vitality',
     goals: [
       { title: 'Build a calm bedtime routine', target: 12 },
       { title: 'In bed on time 5 nights a week', target: 20 },
@@ -30,7 +30,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'nutrition', label: 'Nutrition', short: 'Nu', color: '#3DDC97', stat: 'vitality',
+    id: 'nutrition', label: 'Nutrition', short: 'Nu', color: 'var(--green)', stat: 'vitality',
     goals: [
       { title: 'Add more water and fruit', target: 12 },
       { title: 'Eat clean 4 days a week', target: 16 },
@@ -39,7 +39,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'mind', label: 'Mind & focus', short: 'Mi', color: '#4FC3FF', stat: 'focus',
+    id: 'mind', label: 'Mind & focus', short: 'Mi', color: 'var(--blue)', stat: 'focus',
     goals: [
       { title: 'Start each day with a plan', target: 12 },
       { title: 'Focus deeply 4 days a week', target: 16 },
@@ -48,7 +48,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'learning', label: 'Learning', short: 'Le', color: '#FFC23D', stat: 'intellect',
+    id: 'learning', label: 'Learning', short: 'Le', color: 'var(--gold)', stat: 'intellect',
     goals: [
       { title: 'Read a little, often', target: 12 },
       { title: 'Learn something 4 days a week', target: 16 },
@@ -57,7 +57,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'career', label: 'Career & money', short: 'Ca', color: '#5EE3C1', stat: 'focus',
+    id: 'career', label: 'Career & money', short: 'Ca', color: 'var(--teal)', stat: 'focus',
     goals: [
       { title: 'Get a grip on your money', target: 10 },
       { title: 'Grow your career every week', target: 14 },
@@ -66,7 +66,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'relationships', label: 'Relationships', short: 'Re', color: '#FF4FA3', stat: 'charisma',
+    id: 'relationships', label: 'Relationships', short: 'Re', color: 'var(--pink)', stat: 'charisma',
     goals: [
       { title: 'Reach out to people you care about', target: 10 },
       { title: 'Connect with someone most days', target: 16 },
@@ -75,7 +75,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'home', label: 'Home & order', short: 'Ho', color: '#C3E44F', stat: 'discipline',
+    id: 'home', label: 'Home & order', short: 'Ho', color: 'var(--lime)', stat: 'discipline',
     goals: [
       { title: 'Keep your space tidy', target: 12 },
       { title: 'A calm, ordered home', target: 16 },
@@ -84,7 +84,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'mindfulness', label: 'Mindfulness', short: 'Mf', color: '#B58CFF', stat: 'spirit',
+    id: 'mindfulness', label: 'Mindfulness', short: 'Mf', color: 'var(--violet)', stat: 'spirit',
     goals: [
       { title: 'Pause and breathe daily', target: 12 },
       { title: 'Meditate 4 days a week', target: 16 },
@@ -93,7 +93,7 @@ export const AREAS: AreaDef[] = [
     ],
   },
   {
-    id: 'creativity', label: 'Creativity', short: 'Cr', color: '#FF9F6B', stat: 'spirit',
+    id: 'creativity', label: 'Creativity', short: 'Cr', color: 'var(--coral)', stat: 'spirit',
     goals: [
       { title: 'Make something every week', target: 8 },
       { title: 'Create 3 times a week', target: 12 },
@@ -106,11 +106,11 @@ export const AREAS: AreaDef[] = [
 export const AREA_BY_ID = Object.fromEntries(AREAS.map((a) => [a.id, a])) as Record<AreaId, AreaDef>;
 
 export const STATS: { id: StatId; label: string; color: string }[] = [
-  { id: 'strength', label: 'Strength', color: '#FF7A2F' },
-  { id: 'vitality', label: 'Vitality', color: '#8C7BFF' },
-  { id: 'intellect', label: 'Intellect', color: '#FFC23D' },
-  { id: 'focus', label: 'Focus', color: '#4FC3FF' },
-  { id: 'spirit', label: 'Spirit', color: '#B58CFF' },
-  { id: 'charisma', label: 'Charisma', color: '#FF4FA3' },
-  { id: 'discipline', label: 'Discipline', color: '#C3E44F' },
+  { id: 'strength', label: 'Strength', color: 'var(--orange)' },
+  { id: 'vitality', label: 'Vitality', color: 'var(--purple)' },
+  { id: 'intellect', label: 'Intellect', color: 'var(--gold)' },
+  { id: 'focus', label: 'Focus', color: 'var(--blue)' },
+  { id: 'spirit', label: 'Spirit', color: 'var(--violet)' },
+  { id: 'charisma', label: 'Charisma', color: 'var(--pink)' },
+  { id: 'discipline', label: 'Discipline', color: 'var(--lime)' },
 ];

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AREAS, AREA_BY_ID } from '../game/content/areas';
-import type { AreaId, Difficulty, Energy, GameState, Profile as P, Tier } from '../game/types';
+import type { AreaId, Difficulty, Energy, GameState, Profile as P, ThemeChoice, Tier } from '../game/types';
 import { Avatar } from '../components/HeroHeader';
 import { Icon } from '../components/Icon';
 import { ReminderSettings } from '../components/ReminderSettings';
@@ -134,6 +134,10 @@ export function Profile() {
                 {[0, 1, 2, 3, 4, 5, 6].map((h) => <option key={h} value={h}>{h === 0 ? 'Midnight' : `${h} am`}</option>)}
               </select>
             </div>
+            <span className="muted small">Colours</span>
+            <Segmented<ThemeChoice> value={p.theme ?? 'auto'} onPick={(v) => setP({ theme: v })} options={[{ value: 'auto', label: 'Auto' }, { value: 'ocean', label: 'Ocean' }, { value: 'daylight', label: 'Daylight' }, { value: 'classic', label: 'Classic' }]} />
+            <span className="muted tiny">Auto uses Daylight when your phone is in light mode and Ocean when it's dark.</span>
+            <div className="divider" />
             <SwitchRow label={t.profile.sound} on={p.sound} onChange={(v) => setP({ sound: v })} />
             <SwitchRow label="Vibration (Android)" on={p.vibrate !== false} onChange={(v) => setP({ vibrate: v })} />
             <SwitchRow label="Calm mode (less motion)" on={!!p.calm} onChange={(v) => setP({ calm: v })} />

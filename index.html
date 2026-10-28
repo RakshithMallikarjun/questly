@@ -15,6 +15,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
     <title>Questly</title>
+    <script>
+      // Set the colour theme before the first paint so the screen doesn't flash.
+      try {
+        var t = (JSON.parse(localStorage.getItem('questly-state') || '{}').state || {}).game;
+        t = t && t.profile && t.profile.theme;
+        if (!t || t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'ocean' : 'daylight';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

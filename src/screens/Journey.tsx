@@ -25,7 +25,7 @@ export function Hearts({ lives, size = 20 }: { lives: number; size?: number }) {
   return (
     <span className="row" style={{ gap: 2 }} aria-label={`${lives} of ${MAX_LIVES} lives`}>
       {Array.from({ length: MAX_LIVES }).map((_, i) => (
-        <svg key={i} aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill={i < lives ? '#FF4FA3' : 'none'} stroke={i < lives ? '#FF4FA3' : '#4A3D78'} strokeWidth="2.2">
+        <svg key={i} aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill={i < lives ? 'var(--pink)' : 'none'} stroke={i < lives ? 'var(--pink)' : 'var(--line-2)'} strokeWidth="2.2">
           <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" />
         </svg>
       ))}
@@ -253,7 +253,7 @@ function JourneyMap({ g }: { g: GameState }) {
         const reached = done >= s.from - 1;
         const count = Math.max(1, Math.floor((s.to - s.from + 1) / 4));
         return (
-          <div key={s.name} className="journey-zone" style={{ top, height: bottom - top, background: `linear-gradient(180deg, ${s.color}2E, ${s.color}0A)` }}>
+          <div key={s.name} className="journey-zone" style={{ top, height: bottom - top, background: `linear-gradient(180deg, color-mix(in srgb, ${s.color} 18%, transparent), color-mix(in srgb, ${s.color} 4%, transparent))` }}>
             <span className="journey-zone-label" style={{ color: s.color, opacity: reached ? 1 : 0.75, ...(xAt(s.from - 1) < W / 2 ? { right: 12 } : { left: 12 }) }}>
               {s.name} · Days {s.from}–{s.to}
             </span>
@@ -270,8 +270,8 @@ function JourneyMap({ g }: { g: GameState }) {
       })}
 
       <svg className="journey-path" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={`${pts.join(' ')} ${W / 2},${TOP - 70}`} fill="none" stroke="#4A3D78" strokeWidth="6" strokeDasharray="2 12" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <polyline points={donePts.join(' ')} fill="none" stroke="#FFC23D" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        <polyline points={`${pts.join(' ')} ${W / 2},${TOP - 70}`} fill="none" stroke="var(--line-2)" strokeWidth="6" strokeDasharray="2 12" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <polyline points={donePts.join(' ')} fill="none" stroke="var(--gold)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       </svg>
 
       <div className="journey-finish" style={{ top: 18 }}>
@@ -295,7 +295,7 @@ function JourneyMap({ g }: { g: GameState }) {
               className={`journey-node ${isDone ? 'done' : ''} ${isHere ? 'here' : ''} ${isMilestone ? 'chest' : ''}`}
               style={{
                 left: pct(xAt(i)), top: yAt(i), width: size, height: size,
-                background: isDone ? stage.color : isMilestone ? '#2C2150' : 'var(--card)',
+                background: isDone ? stage.color : isMilestone ? 'var(--card-2)' : 'var(--card)',
                 borderColor: isHere ? 'var(--gold)' : isMilestone || isDone ? stage.color : 'var(--line-2)',
               }}
             >
@@ -304,7 +304,7 @@ function JourneyMap({ g }: { g: GameState }) {
               ) : isMilestone ? (
                 <span style={{ fontSize: 26 }}>{isLast ? '🏁' : j.milestones.includes(d) ? '✨' : '🏅'}</span>
               ) : isDone ? (
-                <Icon name="check" color="#17112B" stroke={3.5} size={20} />
+                <Icon name="check" color="var(--on-accent)" stroke={3.5} size={20} />
               ) : (
                 <span className="muted" style={{ fontSize: 13 }}>{d}</span>
               )}
@@ -395,7 +395,7 @@ function Builder({ onDone }: { onDone: () => void }) {
     return (
       <div className="screen" style={{ paddingTop: 0 }}>
         <TopBar title="New journey" />
-        <div className="card stack center" style={{ alignItems: 'center', background: 'linear-gradient(160deg, #3A2A12 0%, var(--card-2) 100%)', border: '2px solid var(--gold)' }}>
+        <div className="card stack center" style={{ alignItems: 'center', background: 'linear-gradient(160deg, var(--gold-bg) 0%, var(--card-2) 100%)', border: '2px solid var(--gold)' }}>
           <span className="journey-big" style={{ fontSize: 64 }}>66</span>
           <b style={{ fontFamily: 'var(--display)', fontSize: 22 }}>days to a new you</b>
           <span className="soft small">
@@ -528,7 +528,7 @@ function AddHabitSheet({ g, taken, onPick, onClose }: { g: GameState; taken: Jou
         <div className="stack" style={{ gap: 6 }}>
           {trackers.map((h) => (
             <button key={h.id} className="option" onClick={() => onPick({ title: `Break free: ${h.name}`, steps: [checkinTitle(h)], habitId: h.id })}>
-              <span className="swatch" style={{ background: 'var(--pink)' }}><Icon name="quit" size={18} color="#17112B" stroke={2.6} /></span>
+              <span className="swatch" style={{ background: 'var(--pink)' }}><Icon name="quit" size={18} color="var(--on-accent)" stroke={2.6} /></span>
               <span className="grow">{h.name} <span className="muted tiny">· already tracking</span></span>
             </button>
           ))}
@@ -537,7 +537,7 @@ function AddHabitSheet({ g, taken, onPick, onClose }: { g: GameState; taken: Jou
               title: `Break free: ${p.name}`, steps: [`Stayed clear of ${p.name.toLowerCase()} today?`],
               newHabit: { presetId: p.id, name: p.name, mode: p.defaultMode, limit: p.limit, unit: p.unit },
             })}>
-              <span className="swatch" style={{ background: 'var(--pink)' }}><Icon name="quit" size={18} color="#17112B" stroke={2.6} /></span>
+              <span className="swatch" style={{ background: 'var(--pink)' }}><Icon name="quit" size={18} color="var(--on-accent)" stroke={2.6} /></span>
               <span className="grow">{p.name}</span>
             </button>
           ))}

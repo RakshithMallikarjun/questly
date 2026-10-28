@@ -19,9 +19,9 @@ export function Radar({ stats }: { stats: Record<StatId, number> }) {
   return (
     <svg role="img" aria-label={`Character stats. Strongest: ${best[0].label}. Weakest: ${best[n - 1].label}.`} width="100%" viewBox="-44 -6 328 244" style={{ maxWidth: 340 }}>
       {[1, 0.66, 0.33].map((f) => (
-        <polygon key={f} points={poly(() => R * f)} fill="none" stroke="#3A2F63" strokeWidth="1.5" />
+        <polygon key={f} points={poly(() => R * f)} fill="none" stroke="var(--line-2)" strokeWidth="1.5" />
       ))}
-      <polygon points={data} fill="#3DDC97" fillOpacity="0.35" stroke="#3DDC97" strokeWidth="2.5" strokeLinejoin="round" />
+      <polygon points={data} fill="var(--green)" fillOpacity="0.35" stroke="var(--green)" strokeWidth="2.5" strokeLinejoin="round" />
       {STATS.map((s, i) => {
         const [x, y] = pt(R + 22, i);
         return (

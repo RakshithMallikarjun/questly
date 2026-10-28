@@ -7,7 +7,7 @@ import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
 import { JourneyCard } from './Journey';
 
-const SHADES = ['var(--line)', '#1E5E4A', '#2BA577', '#3DDC97'];
+const SHADES = ['var(--line)', 'color-mix(in srgb, var(--green) 35%, var(--line))', 'color-mix(in srgb, var(--green) 70%, var(--line))', 'var(--green)'];
 
 export function Progress() {
   const g = useStore((s) => s.game);

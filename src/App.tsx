@@ -14,7 +14,7 @@ import { initNotifications } from './notify';
 import { flush, initSync } from './sync';
 import { Tour, pendingTour, startTour, useTour } from './components/Tour';
 import { newUnlocks } from './game/content/buddy';
-import { setCalm } from './fx';
+import { applyTheme, setCalm } from './fx';
 
 type Tab = 'today' | 'quit' | 'progress' | 'rewards' | 'profile';
 const TABS: Tab[] = ['today', 'quit', 'progress', 'rewards', 'profile'];
@@ -39,6 +39,17 @@ export default function App() {
   const unlocks = newUnlocks(game).length;
 
   useEffect(() => setCalm(calm), [calm]);
+
+  // Colour theme. On 'auto', switch live when the phone changes between light and dark.
+  const theme = game.profile.theme ?? 'auto';
+  useEffect(() => {
+    applyTheme(theme);
+    if (theme !== 'auto') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const on = () => applyTheme('auto');
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [theme]);
 
   // Tours first, then announce any newly unlocked companion items.
   useEffect(() => {
