@@ -8,10 +8,16 @@ import { SlipSheet } from '../components/SlipSheet';
 import { UrgeBreaker } from '../components/UrgeBreaker';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
+import { chime } from '../fx';
+import { Avatar } from '../components/HeroHeader';
+import { TabTip } from '../components/Tour';
 
 function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: string; onTempted: () => void; onSlip: () => void; onEdit: () => void }) {
   const t = strings();
   const logAmount = useStore((s) => s.logAmount);
+  const complete = useStore((s) => s.complete);
+  const sound = useStore((s) => s.game.profile.sound);
+  const checkin = useStore((s) => s.game.today?.queue.find((q) => q.kind === 'checkin' && q.habitId === h.id));
   const clean = cleanDays(h, day);
   const nextMilestone = [1, 7, 30, 90, 365].find((m) => m > clean);
   const answered = h.checkins[day];
@@ -66,6 +72,15 @@ function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: strin
             {(h.amounts[day] ?? 0) > 0 && <button className="btn btn-ghost btn-sm" onClick={() => logAmount(h.id, h.unit === 'min' ? -5 : -1)} aria-label="Remove some">−</button>}
           </div>
         </>
+      )}
+
+      {answered === 'clean' ? (
+        <div className="row well-done" role="status">
+          <Avatar size={40} mood="proud" still />
+          <span className="small grow">Clean today. Well done. Every clean day counts toward your streak and your chest.</span>
+        </div>
+      ) : checkin && (
+        <button className="btn btn-ghost" onClick={() => { chime(sound, [659, 784, 988]); complete(checkin.key); }}>🌱 I stayed clean today</button>
       )}
 
       <button className="btn btn-pink" onClick={onTempted}>{t.quit.tempted}</button>
@@ -153,6 +168,7 @@ export function Quit() {
   const day = g.today?.day ?? '';
   return (
     <div className="screen">
+      <TabTip tab="quit" />
       <div className="stack" style={{ gap: 4 }}>
         <h1>{t.quit.title}</h1>
         <p className="muted">{t.quit.subtitle}</p>

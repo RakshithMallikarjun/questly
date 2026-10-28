@@ -5,6 +5,7 @@ import type { GameState } from '../game/types';
 import { useStore } from '../store';
 import { Avatar } from './HeroHeader';
 import { ChestArt } from './Chest';
+import { Modal } from './Modal';
 
 // Guided tours. "welcome" runs once for new users after setup. Each new
 // feature gets its own "What's new" tour that runs once for existing users.
@@ -22,23 +23,24 @@ const creature = (g: GameState) => SPECIES.find((s) => s.id === speciesFor(g.pro
 
 const TOURS: Record<string, (g: GameState) => Step[]> = {
   welcome: (g) => [
-    { art: 'buddy', title: `Hi ${g.profile.name || 'there'}!`, body: `I'm your ${creature(g)}. Let me show you around Questly. It takes 30 seconds.` },
-    { target: '[data-tour="quest"]', title: 'One quest at a time', body: 'This is your next quest. Do it, then tap Done to earn XP and coins. "Not now" saves it for later.' },
-    { target: '[data-tour="strip"]', title: "Today's quests", body: 'Each icon is one of today\'s quests, by life area. Tap an icon to jump to that quest. Ticks show what is done.' },
-    { target: '[data-tour="stats"]', title: 'Streak, coins, shields', body: 'Finish your quests every day to grow your streak flame. Coins buy rewards you pick yourself. Shields save your streak on a missed day.' },
-    { target: '[data-tour="buddy"]', title: "That's me!", body: 'I cheer when you finish quests and grow up as you level up. Tap me any time to say hi.' },
-    { target: '.nav button:nth-child(2)', title: 'Break bad habits', body: 'Want to cut down on something? Track it here and get help when you feel tempted.' },
-    { target: '.nav button:nth-child(3)', title: 'Your progress', body: 'See your stats, goals, badges and your 66-day habit journey.' },
-    { target: '.nav button:nth-child(4)', title: 'Rewards', body: 'Spend coins on treats you choose, like a movie night.' },
-    { target: '.nav button:nth-child(5)', title: 'Profile', body: 'Dress me up, set reminders and change your settings here.' },
-    { art: 'chest', title: 'One more thing', body: 'Clear the day to open a mystery chest with a surprise reward. Ready for your first quest?' },
+    { art: 'buddy', title: `Hi ${g.profile.name || 'there'}!`, body: `I'm your ${creature(g)}. Here's Questly in 4 quick steps.` },
+    { target: '[data-tour="quest"]', title: 'One quest at a time', body: 'This is your next quest. Do it in real life, then come back here.' },
+    { target: '[data-tour="done"]', title: 'Tap Done', body: 'You earn XP and coins. Tapped by mistake? Undo shows up right after. "Not now" saves a quest for later.' },
+    { art: 'chest', title: 'Clear the day, open a chest', body: "Finish most of today's quests to keep your streak and open a mystery chest. Your other tabs are below. I'll give you a tip the first time you open each one." },
   ],
   'new-companion': (g) => [
-    { art: 'buddy', title: "What's new: meet your companion!", body: `I'm your ${creature(g)}. I cheer you on, I get sleepy at night, and I grow up as you level up. Tap me any time.` },
-    { target: '[data-tour="strip"]', title: 'Jump between quests', body: 'Each icon is one of today\'s quests, by life area. Tap one to jump to it.' },
+    { art: 'buddy', title: "What's new: meet your companion!", body: `I'm your ${creature(g)}. I cheer you on and grow up as you level up. Tap me any time.` },
+    { target: '[data-tour="strip"]', title: 'Jump between quests', body: "Each icon is one of today's quests. Tap one to jump to it." },
     { art: 'chest', title: 'Daily mystery chest', body: 'Clear the day to open a chest with coins, XP or a streak shield.' },
-    { target: '.nav button:nth-child(5)', title: 'Dress me up', body: 'Hats, glasses and colours unlock at milestones. Pick a different creature in Profile, My companion.' },
   ],
+};
+
+/** First-visit tips for each tab (shown in the tab, never as a pop-up). */
+export const TAB_TIPS: Record<string, string> = {
+  quit: "Trying to cut something out? Add it here. When an urge hits, tap \"I'm tempted\" and I'll help you ride it out.",
+  progress: 'Your stats, goals, badges and 66-day journey live here.',
+  rewards: 'Set your own treats and buy them with the coins you earn.',
+  profile: 'Dress me up, set reminders and change your settings here.',
 };
 
 /** "What's new" tours, oldest first. New users skip these. */
@@ -46,8 +48,9 @@ export const NEWS = ['new-companion'];
 
 export const useTour = create<{ id: string | null; step: number }>(() => ({ id: null, step: 0 }));
 
-export const startTour = (id: string) => {
-  if (window.location.hash !== '#/today') window.location.hash = '/today';
+/** Start a tour. Only an explicit replay moves you to Today. */
+export const startTour = (id: string, goToday = false) => {
+  if (goToday && window.location.hash !== '#/today') window.location.hash = '/today';
   useTour.setState({ id, step: 0 });
 };
 
@@ -113,44 +116,58 @@ export function Tour() {
   const below = rect ? rect.top + rect.height / 2 < vh / 2 : false;
   const cardStyle: React.CSSProperties = rect
     ? below
-      ? { top: Math.min(rect.bottom + pad + 12, vh - 240) }
-      : { bottom: Math.min(vh - rect.top + pad + 12, vh - 240) }
+      ? { top: Math.min(rect.bottom + pad + 12, vh - 260) }
+      : { bottom: Math.min(vh - rect.top + pad + 12, vh - 260) }
     : { top: '50%', transform: 'translateY(-50%)' };
 
   return (
-    <div className="tour" role="dialog" aria-modal="true" aria-label={s.title}>
+    <Modal label={`Tour: ${s.title}`} onClose={finish} className="tour">
       {rect ? (
         <div className="tour-hole" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />
       ) : (
         <div className="tour-dim" />
       )}
       <div className="tour-card" style={cardStyle} key={`${id}${step}`}>
+        <div className="between">
+          <span className="muted small">Step {step + 1} of {steps.length}</span>
+          {step + 1 < steps.length && <button className="btn btn-text btn-sm" style={{ height: 32 }} onClick={finish}>Skip</button>}
+        </div>
         {s.art && (
-          <div className="center" style={{ marginTop: -4 }}>
-            {s.art === 'buddy' ? <Avatar size={120} mood="cheer" /> : <span className="chest-bob" style={{ display: 'inline-block' }}><ChestArt size={96} /></span>}
+          <div className="center">
+            {s.art === 'buddy' ? <Avatar size={110} mood="cheer" /> : <span className="chest-bob" style={{ display: 'inline-block' }}><ChestArt size={90} /></span>}
           </div>
         )}
         <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
           {!s.art && <span style={{ flexShrink: 0 }}><Avatar size={44} mood="happy" still /></span>}
-          <div className="grow stack" style={{ gap: 4 }}>
+          <div className="grow stack" style={{ gap: 4 }} aria-live="polite">
             <b style={{ fontFamily: 'var(--display)', fontSize: 19, fontWeight: 600 }}>{s.title}</b>
             <span className="soft small" style={{ lineHeight: 1.4 }}>{s.body}</span>
           </div>
         </div>
         <div className="between">
-          <div className="tour-dots" aria-label={`Step ${step + 1} of ${steps.length}`}>
+          <div className="tour-dots" aria-hidden="true">
             {steps.map((_, i) => <span key={i} className={i === step ? 'on' : ''} />)}
           </div>
           <div className="row" style={{ gap: 4 }}>
-            {step === 0 ? (
-              <button className="btn btn-text btn-sm" onClick={finish}>Skip</button>
-            ) : (
-              <button className="btn btn-text btn-sm" onClick={back}>Back</button>
-            )}
+            {step > 0 && <button className="btn btn-text btn-sm" onClick={back}>Back</button>}
             <button className="btn btn-gold btn-sm" onClick={next} autoFocus>{step + 1 === steps.length ? "Let's go!" : 'Next'}</button>
           </div>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+/** A one-time tip at the top of a tab, for people who took the welcome tour. */
+export function TabTip({ tab }: { tab: string }) {
+  const seen = useStore((s) => s.game.profile.toursSeen ?? []);
+  const tourSeen = useStore((s) => s.tourSeen);
+  if (!seen.includes('welcome') || seen.includes(`tip-${tab}`) || !TAB_TIPS[tab]) return null;
+  return (
+    <div className="card row tab-tip" role="note">
+      <span style={{ flexShrink: 0 }}><Avatar size={44} mood="happy" still /></span>
+      <span className="soft small grow" style={{ lineHeight: 1.4 }}>{TAB_TIPS[tab]}</span>
+      <button className="btn btn-ghost btn-sm" onClick={() => tourSeen(`tip-${tab}`)}>Got it</button>
     </div>
   );
 }

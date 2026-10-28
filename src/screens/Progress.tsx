@@ -1,3 +1,4 @@
+import { TabTip } from '../components/Tour';
 import { AREA_BY_ID } from '../game/content/areas';
 import { daysBetween, toKey } from '../game/date';
 import { goalTarget } from '../game/engine';
@@ -35,6 +36,7 @@ export function Progress() {
 
   return (
     <div className="screen">
+      <TabTip tab="progress" />
       <h1>{t.progress.title}</h1>
       <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: '12px 4px 6px' }}>
         <Radar stats={g.stats} />

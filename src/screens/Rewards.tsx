@@ -1,10 +1,11 @@
+import { TabTip } from '../components/Tour';
 import { useState } from 'react';
 import { BADGES } from '../game/content/badges';
 import { REST_DAY_COST, canRestToday, restDayUsedThisWeek } from '../game/engine';
 import { Coin, Icon, Star } from '../components/Icon';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
-import { burst, chime } from '../fx';
+import { chime } from '../fx';
 
 export function Rewards() {
   const g = useStore((s) => s.game);
@@ -23,6 +24,7 @@ export function Rewards() {
 
   return (
     <div className="screen">
+      <TabTip tab="rewards" />
       <div className="between">
         <h1>{t.rewards.title}</h1>
         <div className="row" style={{ background: '#3A2A12', border: '2px solid var(--gold)', borderRadius: 14, padding: '6px 12px', gap: 6 }}>
@@ -64,7 +66,7 @@ export function Rewards() {
               {editing ? (
                 <button className="icon-btn" aria-label={`Remove ${r.name}`} onClick={() => removeReward(r.id)}><Icon name="trash" size={20} /></button>
               ) : ok ? (
-                <button className="btn btn-gold btn-sm" style={{ fontSize: 15, minWidth: 84 }} onClick={() => { buy(r.id); burst(); chime(g.profile.sound, [523, 659, 784, 1046]); }}>{t.rewards.redeem}</button>
+                <button className="btn btn-gold btn-sm" style={{ fontSize: 15, minWidth: 84 }} onClick={() => { buy(r.id); chime(g.profile.sound, [523, 659, 784, 1046]); }}>{t.rewards.redeem}</button>
               ) : (
                 <span className="muted small" style={{ minWidth: 84, textAlign: 'right' }}>{fmt(t.rewards.toGo, { n: r.cost - g.coins })}</span>
               )}

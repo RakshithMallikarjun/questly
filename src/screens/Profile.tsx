@@ -7,7 +7,7 @@ import { ReminderSettings } from '../components/ReminderSettings';
 import { SwitchRow } from '../components/Switch';
 import { HealthSetup } from '../components/HealthSetup';
 import { BuddyPage } from '../components/BuddyPage';
-import { startTour } from '../components/Tour';
+import { TabTip, startTour } from '../components/Tour';
 import { perWord } from '../components/LimitFields';
 import { AddHabitSheet } from './Quit';
 import { strings } from '../i18n';
@@ -229,7 +229,7 @@ export function Profile() {
                   <option value="en">English</option>
                 </select>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => startTour('welcome')}>Replay the app tour</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => startTour('welcome', true)}>Replay the app tour</button>
               <button className="btn btn-ghost btn-sm" onClick={() => confirm('Retake the questionnaire? Your XP, coins and badges stay.') && st.replace({ ...g, onboarded: false })}>{t.profile.retake}</button>
               <button className="btn btn-text btn-sm" style={{ color: 'var(--pink)' }} onClick={() => confirm(t.profile.resetConfirm) && st.reset()}>{t.profile.reset}</button>
             </div>
@@ -243,6 +243,7 @@ export function Profile() {
 
   return (
     <div className="screen">
+      <TabTip tab="profile" />
       <div className="card row" style={{ gap: 14 }}>
         <button className="buddy-tile" onClick={() => setPage('buddy')} aria-label="My companion"><Avatar size={64} /></button>
         <div className="grow" style={{ minWidth: 0 }}>

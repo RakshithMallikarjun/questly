@@ -75,24 +75,31 @@ export const outfitFor = (s: GameState): Partial<Record<Slot, string>> => {
   return out;
 };
 
-/** How your buddy feels right now. */
+/** How your buddy feels right now. Never guilt: evenings are calm, not worried. */
 export const moodFor = (s: GameState, now: Date): Mood => {
   const h = now.getHours();
   if (s.today?.cleared) return h >= 22 || h < 5 ? 'sleepy' : 'proud';
   if (h >= 22 || h < 5) return 'sleepy';
-  if (s.streak.current > 0 && h >= 18 && !s.today?.rest) return 'worried';
   return 'happy';
 };
 
+const CHEERS = ['Nice one!', 'That counts!', 'Look at you go!', 'Another one done!', 'Proud of you.', 'Smooth!', 'Yes! Small steps add up.', 'High five!'];
+
+/** A different cheer after each finished quest. */
+export const cheerLine = (n: number) => CHEERS[n % CHEERS.length];
+
 /** A short line your buddy says when you tap it. */
-export const buddyLine = (s: GameState, mood: Mood, n: number): string => {
+export const buddyLine = (s: GameState, mood: Mood, n: number, now = new Date()): string => {
   const name = s.profile.name || 'friend';
   const left = s.today ? s.today.queue.filter((q) => q.kind !== 'bonus').length : 0;
+  const evening = now.getHours() >= 18;
   const lines: Record<Mood, string[]> = {
-    happy: [`Let's go, ${name}!`, left ? `${left} quest${left === 1 ? '' : 's'} to go today.` : 'What a day!', 'One small step at a time.', 'I believe in you!'],
-    cheer: ['Woohoo!', 'You did it!', 'Nice one!'],
+    happy: evening
+      ? ['Still time for one small quest, if you feel like it.', 'Rest counts too. Be kind to yourself tonight.', "Whatever today looked like, I'm glad you're here."]
+      : [`Let's go, ${name}!`, left ? `${left} quest${left === 1 ? '' : 's'} to go today.` : 'What a day!', 'One small step at a time.', 'I believe in you!'],
+    cheer: CHEERS,
     sleepy: ['Yawn... time to rest.', 'Sleep well, see you tomorrow.', 'Zzz...'],
-    worried: [`Don't lose our ${s.streak.current}-day streak!`, 'Just one more quest?', 'We can still do it today!'],
+    worried: ["It's okay. Tomorrow is a fresh start."],
     proud: ['Day cleared! I am so proud.', `${s.streak.current} days in a row!`, 'Legend behaviour.'],
   };
   const list = lines[mood];

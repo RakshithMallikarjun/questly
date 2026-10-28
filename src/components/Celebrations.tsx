@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { isRequired } from '../game/generator';
 import { BADGE_BY_ID } from '../game/content/badges';
 import { levelFor, titleFor } from '../game/xp';
 import { useStore } from '../store';
@@ -20,24 +21,29 @@ export function Celebrations() {
   let badgeRun = 0;
   while (events[badgeRun]?.type === 'badge') badgeRun += 1;
 
+  // Confetti is saved for the big moments: level-up, day cleared (and the chest).
   useEffect(() => {
     if (!e) return;
     const sound = g.profile.sound;
     const vibrate = g.profile.vibrate;
+    if (e.type === 'levelUp') burst(true);
+    if (e.type === 'dayCleared') burst();
     if (big) {
-      burst(true);
       chime(sound, [523, 659, 784, 1046]);
       buzz(vibrate, [40, 60, 40, 60, 120]);
-    } else if (e.type === 'dayCleared' || e.type === 'badge' || e.type === 'journeyDay' || e.type === 'lifeRestored') {
-      burst();
+    } else if (e.type === 'dayCleared' || e.type === 'badge' || e.type === 'journeyDay' || e.type === 'lifeRestored' || e.type === 'cleanDay') {
       chime(sound, [659, 784, 988]);
       buzz(vibrate, [30, 40, 60]);
     }
-    if (!big) {
-      const id = setTimeout(() => pop(Math.max(1, badgeRun)), e.type === 'badge' || e.type === 'dayCleared' ? 3000 : 2400);
-      return () => clearTimeout(id);
-    }
-  }, [e, big, pop, badgeRun, g.profile.sound, g.profile.vibrate]);
+  }, [e, big, g.profile.sound, g.profile.vibrate]);
+
+  // Small messages close by themselves, but never while you're reading or focused on them.
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    if (!e || big || hold) return;
+    const id = setTimeout(() => pop(Math.max(1, badgeRun)), e.type === 'badge' || e.type === 'dayCleared' || e.type === 'cleanDay' ? 4500 : 3500);
+    return () => clearTimeout(id);
+  }, [e, big, hold, pop, badgeRun]);
 
   if (!e) return null;
 
@@ -118,15 +124,15 @@ export function Celebrations() {
     const stage = j ? stagesFor(j.length).find((s) => s.to === e.value) : undefined;
     const done = e.type === 'journeyDone';
     return (
-      <div className="overlay center" role="dialog" aria-modal="true" aria-label={done ? 'Journey complete' : 'Chest unlocked'}>
+      <div className="overlay center" role="dialog" aria-modal="true" aria-label={done ? 'Journey complete' : 'Milestone reached'}>
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>{done ? 'Journey complete!' : `Day ${e.value} reached!`}</span>
-          <div className="ring"><div><span style={{ fontSize: 84, lineHeight: 1 }}>{done ? '🏆' : '🎁'}</span></div></div>
+          <div className="ring"><div><span style={{ fontSize: 84, lineHeight: 1 }}>{done ? '🏆' : '🏅'}</span></div></div>
           <h1>{done ? `Habit formed: ${e.label}` : `${e.label} conquered`}</h1>
           <p className="soft">
             {done
               ? `${e.value} days of showing up. These habits are part of who you are now.`
-              : 'You opened a treasure chest.'}
+              : 'Milestone reward unlocked.'}
             {stage ? ` +${stage.xp} XP, +${stage.coins} coins${!done && j?.undo?.life ? ', and a heart back' : ''}.` : ''}
           </p>
           <div className="grow" />
@@ -144,14 +150,32 @@ export function Celebrations() {
       ? badgeRun > 1
         ? `${badgeRun} badges unlocked: ${events.slice(0, badgeRun).map((b) => BADGE_BY_ID[b.id!]?.name ?? b.label).join(', ')}`
         : `Badge unlocked: ${BADGE_BY_ID[e.id!]?.name ?? e.label}`
-    : e.type === 'dayCleared' ? `Day cleared! Streak: ${e.value} ${e.value === 1 ? 'day' : 'days'}. A mystery chest is waiting!`
+    : e.type === 'dayCleared' ? dayClearedText(e.value ?? 0, g.today?.queue.filter(isRequired).length ?? 0)
+    : e.type === 'cleanDay' ? `🌱 ${e.value} clean ${e.value === 1 ? 'day' : 'days'}: ${e.label}. Well done.`
     : e.type === 'shieldUsed' ? 'A streak shield saved your streak!'
     : e.type === 'tierUp' ? `${e.label} quests just got harder. You're ready.`
     : 'Nice!';
 
   return (
-    <div className="toast" role="status" onClick={() => pop(Math.max(1, badgeRun))}>
-      {text}
+    <div className="toast-wrap" role="status">
+      <button
+        className="toast"
+        onClick={() => { setHold(false); pop(Math.max(1, badgeRun)); }}
+        onMouseEnter={() => setHold(true)}
+        onMouseLeave={() => setHold(false)}
+        onFocus={() => setHold(true)}
+        onBlur={() => setHold(false)}
+        aria-label={`${text} Tap to close.`}
+      >
+        {text}
+      </button>
     </div>
   );
 }
+
+const dayClearedText = (streak: number, left: number) => {
+  const days = `${streak}-day streak`;
+  return left > 0
+    ? `Streak saved: ${days}! ${left} quest${left === 1 ? '' : 's'} left, and your chest is ready.`
+    : `Day cleared: ${days}! Your mystery chest is ready.`;
+};

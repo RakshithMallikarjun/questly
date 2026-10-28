@@ -311,6 +311,7 @@ export const completeQuest = (input: GameState, key: string, now: Date, opts: { 
     if (h) {
       h.checkins[t.day] = 'clean';
       h.best = Math.max(h.best, cleanDays(h, t.day));
+      events.push({ type: 'cleanDay', id: h.id, label: h.name, value: cleanDays(h, t.day) });
     }
   }
 
@@ -873,3 +874,7 @@ export const markTourSeen = (input: GameState, id: string, now: Date): Result =>
   s.updatedAt = now.getTime();
   return { state: s, events: [] };
 };
+
+/** True when undoing this quest would un-clear the day (and take back today's streak day). */
+export const undoCostsStreak = (s: GameState, key: string, now: Date): boolean =>
+  !!s.today?.cleared && undoQuest(s, key, now).state.today?.cleared === false;

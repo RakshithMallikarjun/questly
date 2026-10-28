@@ -110,7 +110,8 @@ export const floatText = (from: DOMRect, text: string, color = '#FFC23D') => {
 };
 
 /** Short-lived UI moments, such as the companion cheering after a quest. */
-export const useFx = create<{ cheerAt: number; cheer: () => void }>((set) => ({
+export const useFx = create<{ cheerAt: number; line: string | null; cheer: (line?: string) => void }>((set) => ({
   cheerAt: 0,
-  cheer: () => set({ cheerAt: Date.now() }),
+  line: null,
+  cheer: (line) => set({ cheerAt: Date.now(), line: line ?? null }),
 }));

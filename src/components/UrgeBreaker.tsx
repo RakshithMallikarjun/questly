@@ -3,7 +3,7 @@ import { swapsFor } from '../game/engine';
 import type { Habit } from '../game/types';
 import { strings } from '../i18n';
 import { useStore } from '../store';
-import { burst, chime } from '../fx';
+import { chime } from '../fx';
 
 export function UrgeBreaker({ habit, onClose }: { habit: Habit; onClose: () => void }) {
   const resist = useStore((s) => s.resist);
@@ -33,7 +33,6 @@ export function UrgeBreaker({ habit, onClose }: { habit: Habit; onClose: () => v
           className="btn btn-green btn-block"
           onClick={() => {
             resist(habit.id);
-            burst();
             chime(sound, [523, 659, 784]);
             onClose();
           }}

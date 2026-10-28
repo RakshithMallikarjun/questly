@@ -87,14 +87,14 @@ export function JourneyCard() {
       <div className="journey-track" aria-hidden="true">
         <span style={{ width: `${pct}%`, background: `linear-gradient(90deg, var(--green), ${stage.color})` }} />
         {stagesFor(j.length).map((s) => (
-          <i key={s.to} style={{ left: `${(s.to / j.length) * 100}%` }}>{s.to === j.length ? '🏆' : j.milestones.includes(s.to) ? '✨' : '🎁'}</i>
+          <i key={s.to} style={{ left: `${(s.to / j.length) * 100}%` }}>{s.to === j.length ? '🏆' : j.milestones.includes(s.to) ? '✨' : '🏅'}</i>
         ))}
       </div>
       {j.comeback ? (
         <span className="small" style={{ color: 'var(--pink)', textAlign: 'left' }}>Out of hearts. Finish today’s comeback quest to win one back.</span>
       ) : next ? (
         <span className="muted small" style={{ textAlign: 'left' }}>
-          {next.to === j.length ? '🏆 Finish line' : '🎁 Next chest'} in {next.to - j.doneDays.length} {next.to - j.doneDays.length === 1 ? 'day' : 'days'}
+          {next.to === j.length ? '🏆 Finish line' : '🏅 Next milestone'} in {next.to - j.doneDays.length} {next.to - j.doneDays.length === 1 ? 'day' : 'days'}
         </span>
       ) : null}
     </button>
@@ -153,7 +153,7 @@ function Active() {
         )}
         {next && (
           <span className="muted small">
-            {next.to === j.length ? '🏆' : '🎁'} {next.to - j.doneDays.length} {next.to - j.doneDays.length === 1 ? 'step' : 'steps'} to {next.to === j.length ? 'the finish' : `the ${next.name} chest`}: +{next.xp} XP, +{next.coins} coins{next.to < j.length ? ', +1 heart' : ''}
+            {next.to === j.length ? '🏆' : '🏅'} {next.to - j.doneDays.length} {next.to - j.doneDays.length === 1 ? 'step' : 'steps'} to {next.to === j.length ? 'the finish' : `the ${next.name} milestone`}: +{next.xp} XP, +{next.coins} coins{next.to < j.length ? ', +1 heart' : ''}
           </span>
         )}
       </div>
@@ -199,7 +199,7 @@ function Active() {
         <span className="soft small">• Habits join one at a time (Day 1, 8 and 22), and each one gets a little harder in every new zone.</span>
         <span className="soft small">• Miss a day and you lose a heart. A Rest day pass protects that day.</span>
         <span className="soft small">• Out of hearts? You never restart. A comeback quest appears, and finishing it wins a heart back.</span>
-        <span className="soft small">• Every chest gives XP, coins and a heart back (up to {MAX_LIVES}).</span>
+        <span className="soft small">• Every milestone gives XP, coins and a heart back (up to {MAX_LIVES}).</span>
         <span className="muted tiny">Why 66 days? A University College London study found new habits took 66 days on average to become automatic.</span>
       </div>
 
@@ -301,7 +301,7 @@ function JourneyMap({ g }: { g: GameState }) {
               {isHere ? (
                 <Avatar id={g.profile.avatar} name={g.profile.name} size={46} />
               ) : isMilestone ? (
-                <span style={{ fontSize: 26 }}>{isLast ? '🏁' : j.milestones.includes(d) ? '✨' : '🎁'}</span>
+                <span style={{ fontSize: 26 }}>{isLast ? '🏁' : j.milestones.includes(d) ? '✨' : '🏅'}</span>
               ) : isDone ? (
                 <Icon name="check" color="#17112B" stroke={3.5} size={20} />
               ) : (

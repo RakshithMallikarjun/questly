@@ -273,7 +273,7 @@ export interface GameState {
 export interface GameEvent {
   type:
     | 'levelUp' | 'badge' | 'dayCleared' | 'streak' | 'goal' | 'shieldUsed' | 'tierUp'
-    | 'journeyDay' | 'journeyMilestone' | 'journeyDone' | 'lifeLost' | 'lifeRestored' | 'unlock';
+    | 'journeyDay' | 'journeyMilestone' | 'journeyDone' | 'lifeLost' | 'lifeRestored' | 'unlock' | 'cleanDay';
   value?: number;
   id?: string;
   label?: string;

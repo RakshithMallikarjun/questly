@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { announceUnlocks, completeQuest, emptyState, ensureToday, finishOnboarding, focusQuest, openChest, undoQuest } from './engine';
-import { moodFor, newUnlocks, outfitFor, speciesFor, stageForLevel } from './content/buddy';
+import { buddyLine, moodFor, newUnlocks, outfitFor, speciesFor, stageForLevel } from './content/buddy';
 import { pendingTour } from '../components/Tour';
 import type { GameState } from './types';
 
@@ -74,11 +74,11 @@ describe('companion', () => {
     expect(outfitFor(dressed)).toEqual({ head: 'party' });
   });
 
-  it('gets worried in the evening when the streak is at risk', () => {
+  it('stays kind in the evening, with no streak guilt', () => {
     const s = { ...start(), streak: { current: 4, best: 4, lastCleared: null, shields: 0 } };
-    expect(moodFor(s, at(DAY, 19))).toBe('worried');
-    expect(moodFor(s, at(DAY, 10))).toBe('happy');
+    expect(moodFor(s, at(DAY, 19))).toBe('happy');
     expect(moodFor(s, at(DAY, 23))).toBe('sleepy');
+    for (let n = 0; n < 6; n++) expect(buddyLine(s, 'happy', n, at(DAY, 19))).not.toMatch(/streak|lose/i);
   });
 });
 
@@ -90,5 +90,19 @@ describe('guided tour', () => {
     expect(pendingTour(veteran)).toBe('new-companion');
     const seen = { ...veteran, profile: { ...veteran.profile, toursSeen: ['new-companion'] } };
     expect(pendingTour(seen)).toBeNull();
+  });
+});
+
+describe('undo safety', () => {
+  it('knows when an undo would take back the cleared day', async () => {
+    const { undoCostsStreak } = await import('./engine');
+    let cleared = start();
+    while (!cleared.today!.cleared) cleared = completeQuest(cleared, cleared.today!.queue.find((x) => x.kind !== 'bonus')!.key, at(DAY)).state;
+    const last = cleared.today!.done.at(-1)!.key;
+    expect(undoCostsStreak(cleared, last, at(DAY))).toBe(true);
+    const s = start();
+    const first = s.today!.queue.find((q) => q.kind !== 'bonus')!.key;
+    const one = completeQuest(s, first, at(DAY)).state;
+    expect(undoCostsStreak(one, first, at(DAY))).toBe(false);
   });
 });

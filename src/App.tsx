@@ -42,13 +42,14 @@ export default function App() {
 
   // Tours first, then announce any newly unlocked companion items.
   useEffect(() => {
-    if (!game.onboarded || busy || touring) return;
+    // Tours and unlock news only appear by themselves on Today, never over another tab (like Quit during an urge).
+    if (!game.onboarded || busy || touring || tab !== 'today') return;
     if (tour) {
       const id = setTimeout(() => startTour(tour), 700);
       return () => clearTimeout(id);
     }
     if (unlocks) useStore.getState().announceUnlocks();
-  }, [game.onboarded, busy, touring, tour, unlocks]);
+  }, [game.onboarded, busy, touring, tour, unlocks, tab]);
   setLanguage(language);
   const t = strings();
 

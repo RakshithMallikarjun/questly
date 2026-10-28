@@ -6,7 +6,7 @@ import { strings } from '../i18n';
 import { useStore } from '../store';
 import { buzz, useFx } from '../fx';
 import { Buddy } from './Buddy';
-import { Coin, Flame, Shield } from './Icon';
+import { Coin, Flame } from './Icon';
 
 /** Your companion, dressed and in its current mood. */
 export function Avatar({ size = 52, mood, still }: { id?: string; name?: string; size?: number; mood?: Mood; still?: boolean }) {
@@ -58,64 +58,76 @@ export function useCountUp(value: number, ms = 700) {
   return shown;
 }
 
+/** One slim row: companion, level ring, streak and coins. Tap any of them for details. */
 export function HeroHeader() {
   const g = useStore((s) => s.game);
   const cheer = useFx((s) => s.cheer);
+  const cheerAt = useFx((s) => s.cheerAt);
+  const cheerText = useFx((s) => s.line);
   const t = strings();
   const xp = useCountUp(g.xp);
   const coins = useCountUp(g.coins);
   const lv = levelFor(xp);
-  const [line, setLine] = useState<string | null>(null);
+  const [tip, setTip] = useState<{ text: string; at: number; right?: number } | null>(null);
   const taps = useRef(0);
   const streak = g.streak.current;
   const weeks = Math.floor(streak / 7);
-  const flame = streak ? Math.min(30, 22 + weeks * 2) : 22;
+  const flame = streak ? Math.min(28, 20 + weeks * 2) : 20;
+  const pct = lv.into / lv.need;
+
+  // The companion's cheer after a quest shows in the same bubble.
+  useEffect(() => {
+    if (cheerText) setTip({ text: cheerText, at: cheerAt });
+  }, [cheerText, cheerAt]);
 
   useEffect(() => {
-    if (!line) return;
-    const id = setTimeout(() => setLine(null), 2600);
+    if (!tip) return;
+    const id = setTimeout(() => setTip(null), 3200);
     return () => clearTimeout(id);
-  }, [line]);
+  }, [tip]);
 
+  const say = (text: string, right?: number) => setTip({ text, at: Date.now(), right });
   const tapBuddy = () => {
-    const mood = moodFor(g, new Date());
-    setLine(buddyLine(g, mood, taps.current++));
+    say(buddyLine(g, moodFor(g, new Date()), taps.current++));
     cheer();
     buzz(g.profile.vibrate, 15);
   };
+  const shields = g.streak.shields;
 
   return (
-    <>
-      <div className="hero-row">
-        <button className="buddy-tile" onClick={tapBuddy} aria-label="Your companion. Tap to say hi." data-tour="buddy">
-          <Avatar size={64} />
-          {line && <span className="speech" role="status">{line}</span>}
-        </button>
-        <div className="grow stack" style={{ gap: 6 }}>
-          <div className="row" style={{ gap: 6, alignItems: 'baseline' }}>
-            <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 600 }}>{t.common.level} {lv.level}</span>
-            <span className="muted small">{titleFor(lv.level)}</span>
-          </div>
-          <div className="bar bar-xp" role="progressbar" aria-valuenow={lv.into} aria-valuemax={lv.need} aria-label="XP to next level">
-            <span style={{ width: `${Math.round((lv.into / lv.need) * 100)}%` }} />
-          </div>
-          <span className="muted tiny">{lv.into} / {lv.need} XP</span>
-        </div>
+    <div className="hero-slim">
+      <button className="buddy-tile" onClick={tapBuddy} aria-label="Your companion. Tap to say hi." data-tour="buddy">
+        <Avatar size={46} />
+      </button>
+      <button
+        className="level-ring"
+        onClick={() => say(`Level ${lv.level} ${titleFor(lv.level)}. ${lv.need - lv.into} XP to level ${lv.level + 1}.`)}
+        aria-label={`${t.common.level} ${lv.level}, ${titleFor(lv.level)}. ${lv.into} of ${lv.need} XP.`}
+      >
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <circle cx="23" cy="23" r="19" fill="none" stroke="var(--card-2)" strokeWidth="5" />
+          <circle cx="23" cy="23" r="19" fill="none" stroke="var(--green)" strokeWidth="5" strokeLinecap="round"
+            strokeDasharray={`${Math.max(0.02, pct) * 119.4} 119.4`} transform="rotate(-90 23 23)" style={{ transition: 'stroke-dasharray 0.6s ease' }} />
+        </svg>
+        <span className="lv-num">{lv.level}</span>
+      </button>
+      <div className="grow" style={{ minWidth: 0, lineHeight: 1.15 }}>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{titleFor(lv.level)}</div>
+        <div className="muted tiny">{lv.into}/{lv.need} XP</div>
       </div>
-      <div className="chips3" data-tour="stats">
-        <div className="chip-stat" aria-label={`${streak} ${t.common.dayStreak}`}>
-          <span className={`flame-wrap ${streak ? 'lit' : ''} ${weeks >= 2 ? 'hot' : ''}`} style={{ width: 30, height: 30 }}><Flame size={flame} /></span>
-          <div><b>{streak}</b><span className="muted">streak</span></div>
-        </div>
-        <div className="chip-stat" aria-label={`${g.coins} ${t.common.coins}`} data-fx="coins">
-          <Coin size={22} />
-          <div><b>{coins}</b><span className="muted">{t.common.coins}</span></div>
-        </div>
-        <div className="chip-stat" aria-label={`${g.streak.shields} ${t.common.shields}`}>
-          <Shield size={22} />
-          <div><b>{g.streak.shields}</b><span className="muted">{t.common.shields}</span></div>
-        </div>
-      </div>
-    </>
+      <button
+        className="pill-stat"
+        onClick={() => say(streak ? `${streak}-day streak. ${shields ? `${shields} shield${shields === 1 ? '' : 's'} can cover a missed day.` : 'Shields from 7-day streaks can cover a missed day.'}` : 'Clear today to start a streak.', 100)}
+        aria-label={`${streak} ${t.common.dayStreak}, ${shields} ${t.common.shields}`}
+      >
+        <span className={`flame-wrap ${streak ? 'lit' : ''} ${weeks >= 2 ? 'hot' : ''}`} style={{ width: 24, height: 24 }}><Flame size={flame} /></span>
+        <b>{streak}</b>
+      </button>
+      <button className="pill-stat" data-fx="coins" onClick={() => say(`${g.coins} coins. Spend them in Rewards.`, 30)} aria-label={`${g.coins} ${t.common.coins}`}>
+        <Coin size={20} />
+        <b>{coins}</b>
+      </button>
+      {tip && <span className={`speech ${tip.right ? 'right' : ''}`} role="status" key={tip.at} style={tip.right ? ({ '--arrow': `${tip.right}px` } as React.CSSProperties) : undefined}>{tip.text}</span>}
+    </div>
   );
 }
