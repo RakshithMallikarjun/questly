@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { useState } from 'react';
 import { HABIT_PRESETS } from '../game/content/habits';
 import { cleanDays, periodTotal } from '../game/engine';
@@ -109,8 +110,8 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
   const [period, setPeriod] = useState<LimitPeriod>('day');
   const presets = HABIT_PRESETS.filter((p) => !existing.includes(p.id));
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Add a habit" onClick={(e) => e.stopPropagation()}>
+    <Modal bare label="Add a habit" onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2>Add a habit to break</h2>
         <div className="options">
           {presets.map((p) => (
@@ -128,7 +129,7 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
         <button className="btn btn-gold" disabled={!name.trim()} onClick={() => { addHabit({ presetId: 'custom', name: name.trim(), mode, limit: mode === 'limit' ? limit : undefined, unit: mode === 'limit' ? 'times' : undefined, period: mode === 'limit' ? period : undefined }); onClose(); }}>Add</button>
         <button className="btn btn-text" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }
 
@@ -142,8 +143,8 @@ function EditHabitSheet({ h, onClose }: { h: Habit; onClose: () => void }) {
     onClose();
   };
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={`Edit ${h.name}`} onClick={(e) => e.stopPropagation()}>
+    <Modal bare label={`Edit ${h.name}`} onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2>{h.name}</h2>
         <div className="row">
           <button className={`btn btn-sm grow ${mode === 'quit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('quit')}>Quit</button>
@@ -154,7 +155,7 @@ function EditHabitSheet({ h, onClose }: { h: Habit; onClose: () => void }) {
         <button className="btn btn-gold" onClick={save}>Save</button>
         <button className="btn btn-text" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }
 

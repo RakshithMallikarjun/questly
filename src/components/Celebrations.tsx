@@ -1,10 +1,11 @@
+import { Modal } from './Modal';
 import { useEffect, useState } from 'react';
 import { isRequired } from '../game/generator';
 import { BADGE_BY_ID } from '../game/content/badges';
 import { levelFor, titleFor } from '../game/xp';
 import { useStore } from '../store';
 import { stagesFor } from '../game/content/journeys';
-import { burst, buzz, chime } from '../fx';
+import { burst, buzz, chime, focusQuest } from '../fx';
 import { Star } from './Icon';
 import { Avatar } from './HeroHeader';
 import { EVOLVE_LEVELS, ITEM_BY_ID, SPECIES, speciesFor, stageForLevel, STAGE_NAMES } from '../game/content/buddy';
@@ -31,14 +32,17 @@ export function Celebrations() {
     if (big) {
       chime(sound, [523, 659, 784, 1046]);
       buzz(vibrate, [40, 60, 40, 60, 120]);
-    } else if (e.type === 'dayCleared' || e.type === 'badge' || e.type === 'journeyDay' || e.type === 'lifeRestored' || e.type === 'cleanDay') {
+    } else if (e.type === 'dayCleared' || e.type === 'badge' || e.type === 'journeyDay' || e.type === 'lifeRestored') {
       chime(sound, [659, 784, 988]);
       buzz(vibrate, [30, 40, 60]);
     }
   }, [e, big, g.profile.sound, g.profile.vibrate]);
 
   // Small messages close by themselves, but never while you're reading or focused on them.
-  const [hold, setHold] = useState(false);
+  // Holding is tied to one message, so the next message closes on its own again.
+  const [heldEvent, setHeldEvent] = useState<object | null>(null);
+  const hold = !!e && heldEvent === e;
+  const setHold = (on: boolean) => setHeldEvent(on ? e : null);
   useEffect(() => {
     if (!e || big || hold) return;
     const id = setTimeout(() => pop(Math.max(1, badgeRun)), e.type === 'badge' || e.type === 'dayCleared' || e.type === 'cleanDay' ? 4500 : 3500);
@@ -54,7 +58,7 @@ export function Celebrations() {
     const species = speciesFor(g.profile.avatar);
     const label = SPECIES.find((x) => x.id === species)?.label.toLowerCase();
     return (
-      <div className="overlay center" role="dialog" aria-modal="true" aria-label={`Level up to ${lv}`}>
+      <Modal bare label={`Level up to ${lv}`} onClose={() => pop()}><div className="overlay center">
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>{evolved ? 'Evolution!' : 'Level up!'}</span>
           {evolved ? (
@@ -79,9 +83,9 @@ export function Celebrations() {
             {lv % 5 === 1 && lv > 1 ? `New title: ${titleFor(lv)}!` : `${next - lv} more ${next - lv === 1 ? 'level' : 'levels'} until you reach the rank of ${titleFor(next)}.`}
           </p>
           <div className="grow" />
-          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus>Keep going</button>
+          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus data-autofocus>Keep going</button>
         </div>
-      </div>
+      </div></Modal>
     );
   }
 
@@ -90,7 +94,7 @@ export function Celebrations() {
     const item = e.id ? ITEM_BY_ID[e.id] : undefined;
     const preview = item ? { [item.slot]: item.id } : {};
     return (
-      <div className="overlay center" role="dialog" aria-modal="true" aria-label="New item unlocked">
+      <Modal bare label="New item unlocked" onClose={() => pop()}><div className="overlay center">
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>{many ? 'New items unlocked!' : 'New item unlocked!'}</span>
           <Buddy species={speciesFor(g.profile.avatar)} stage={stageForLevel(levelFor(g.xp).level)} mood="cheer" outfit={preview} size={200} />
@@ -100,22 +104,22 @@ export function Celebrations() {
           <button className="btn btn-gold btn-block" onClick={() => { pop(); window.location.hash = '/profile'; sessionStorage.setItem('questly-open', 'buddy'); }}>Try it on</button>
           <button className="btn btn-text" onClick={() => pop()}>Later</button>
         </div>
-      </div>
+      </div></Modal>
     );
   }
 
   if (e.type === 'goal') {
     return (
-      <div className="overlay center" role="dialog" aria-modal="true" aria-label="Goal complete">
+      <Modal bare label="Goal complete" onClose={() => pop()}><div className="overlay center">
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>Goal complete!</span>
           <div className="ring"><div><Star size={80} color="#FFC23D" /></div></div>
           <h1>{e.label}</h1>
           <p className="soft">A new, harder goal has been unlocked. Keep climbing.</p>
           <div className="grow" />
-          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus>Claim it</button>
+          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus data-autofocus>Claim it</button>
         </div>
-      </div>
+      </div></Modal>
     );
   }
 
@@ -124,7 +128,7 @@ export function Celebrations() {
     const stage = j ? stagesFor(j.length).find((s) => s.to === e.value) : undefined;
     const done = e.type === 'journeyDone';
     return (
-      <div className="overlay center" role="dialog" aria-modal="true" aria-label={done ? 'Journey complete' : 'Milestone reached'}>
+      <Modal bare label={done ? 'Journey complete' : 'Milestone reached'} onClose={() => pop()}><div className="overlay center">
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>{done ? 'Journey complete!' : `Day ${e.value} reached!`}</span>
           <div className="ring"><div><span style={{ fontSize: 84, lineHeight: 1 }}>{done ? '🏆' : '🏅'}</span></div></div>
@@ -136,9 +140,9 @@ export function Celebrations() {
             {stage ? ` +${stage.xp} XP, +${stage.coins} coins${!done && j?.undo?.life ? ', and a heart back' : ''}.` : ''}
           </p>
           <div className="grow" />
-          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus>{done ? 'Claim my trophy' : 'Onward!'}</button>
+          <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus data-autofocus>{done ? 'Claim my trophy' : 'Onward!'}</button>
         </div>
-      </div>
+      </div></Modal>
     );
   }
 
@@ -160,7 +164,7 @@ export function Celebrations() {
     <div className="toast-wrap" role="status">
       <button
         className="toast"
-        onClick={() => { setHold(false); pop(Math.max(1, badgeRun)); }}
+        onClick={() => { setHold(false); pop(Math.max(1, badgeRun)); focusQuest(); }}
         onMouseEnter={() => setHold(true)}
         onMouseLeave={() => setHold(false)}
         onFocus={() => setHold(true)}

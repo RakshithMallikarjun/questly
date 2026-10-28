@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { announceUnlocks, completeQuest, emptyState, ensureToday, finishOnboarding, focusQuest, openChest, undoQuest } from './engine';
 import { buddyLine, moodFor, newUnlocks, outfitFor, speciesFor, stageForLevel } from './content/buddy';
 import { pendingTour } from '../components/Tour';
-import type { GameState } from './types';
+import type { GameState, QuestInstance } from './types';
+import { currentQuest } from './generator';
 
 const at = (key: string, hour = 10) => {
   const [y, m, d] = key.split('-').map(Number);
@@ -104,5 +105,51 @@ describe('undo safety', () => {
     const first = s.today!.queue.find((q) => q.kind !== 'bonus')!.key;
     const one = completeQuest(s, first, at(DAY)).state;
     expect(undoCostsStreak(one, first, at(DAY))).toBe(false);
+  });
+});
+
+describe('quit check-ins', () => {
+  const withHabit = () =>
+    finishOnboarding(emptyState(at(DAY).getTime()), { ...emptyState().profile, name: 'R', areas: ['fitness', 'sleep', 'mind'] },
+      [{ presetId: 'scrolling', name: 'Doom-scrolling', mode: 'quit' }], at(DAY));
+  const checkin = (s: GameState) => s.today!.queue.find((q) => q.kind === 'checkin')!;
+
+  it('celebrates a clean day', () => {
+    const s = withHabit();
+    const r = completeQuest(s, checkin(s).key, at(DAY, 20));
+    const e = r.events.find((x) => x.type === 'cleanDay');
+    expect(e).toMatchObject({ label: 'Doom-scrolling', value: 1 });
+    expect(r.state.habits[0].checkins[DAY]).toBe('clean');
+  });
+
+  it('undo takes the clean day back, and redoing it counts it once', () => {
+    const s = withHabit();
+    const key = checkin(s).key;
+    const done = completeQuest(s, key, at(DAY, 20)).state;
+    const undone = undoQuest(done, key, at(DAY, 20)).state;
+    expect(undone.habits[0].checkins[DAY]).toBeUndefined();
+    expect(undone.today!.queue.some((q) => q.key === key)).toBe(true);
+    const redo = completeQuest(undone, key, at(DAY, 20));
+    expect(redo.events.find((x) => x.type === 'cleanDay')?.value).toBe(1);
+  });
+});
+
+describe('which quest Today shows', () => {
+  const q = (key: string, kind: QuestInstance['kind']) => ({ key, kind, title: key }) as QuestInstance;
+  const daily = q('a', 'daily');
+  const main = q('b', 'main');
+  const bonus = q('x', 'bonus');
+
+  it('shows the first required quest, even if a bonus quest is first in line', () => {
+    expect(currentQuest([bonus, daily, main], false)).toBe(daily);
+    expect(currentQuest([daily, bonus], false)).toBe(daily);
+  });
+  it('shows a bonus quest picked from the icons', () => {
+    expect(currentQuest([bonus, daily], true)).toBe(bonus);
+  });
+  it('shows nothing once only bonus quests are left, unless asked for', () => {
+    expect(currentQuest([bonus], false)).toBeUndefined();
+    expect(currentQuest([bonus], true)).toBe(bonus);
+    expect(currentQuest([], true)).toBeUndefined();
   });
 });

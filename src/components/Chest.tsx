@@ -79,6 +79,7 @@ function ChestOpen({ onClose }: { onClose: () => void }) {
           onAnimationEnd={() => phase === 'shake' && reveal()}
           aria-label={phase === 'open' ? 'Chest opened' : 'Open the chest'}
           autoFocus
+          data-autofocus
         >
           <ChestArt size={190} open={phase === 'open'} />
         </button>
@@ -100,7 +101,7 @@ function ChestOpen({ onClose }: { onClose: () => void }) {
           )}
         </div>
         {phase === 'open' ? (
-          <button className="btn btn-gold btn-block" style={{ marginTop: 24 }} onClick={onClose} autoFocus>Awesome!</button>
+          <button className="btn btn-gold btn-block" style={{ marginTop: 24 }} onClick={onClose} autoFocus data-autofocus>Awesome!</button>
         ) : (
           <button className="btn btn-text" style={{ marginTop: 24 }} onClick={onClose}>Not now</button>
         )}

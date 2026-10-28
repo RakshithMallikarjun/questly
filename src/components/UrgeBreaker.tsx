@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useEffect, useState } from 'react';
 import { swapsFor } from '../game/engine';
 import type { Habit } from '../game/types';
@@ -23,8 +24,8 @@ export function UrgeBreaker({ habit, onClose }: { habit: Habit; onClose: () => v
   const mm = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
 
   return (
-    <div className="overlay center" onClick={onClose}>
-      <div className="sheet" style={{ borderRadius: 28, margin: 16, alignItems: 'center', textAlign: 'center' }} role="dialog" aria-modal="true" aria-label={t.quit.urgeTitle} onClick={(e) => e.stopPropagation()}>
+    <Modal bare label={t.quit.urgeTitle} onClose={onClose}><div className="overlay center" onClick={onClose}>
+      <div className="sheet" style={{ borderRadius: 28, margin: 16, alignItems: 'center', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
         <span className="label-caps" style={{ color: 'var(--pink)' }}>{t.quit.urgeTitle} · {mm}</span>
         <h2>{habit.name}</h2>
         <div className="breathe" aria-live="polite">{phase}</div>
@@ -41,6 +42,6 @@ export function UrgeBreaker({ habit, onClose }: { habit: Habit; onClose: () => v
         </button>
         <button className="btn btn-text" onClick={onClose}>{t.quit.close}</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }

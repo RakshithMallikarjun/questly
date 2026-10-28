@@ -163,4 +163,14 @@ export const checkinTitle = (h: Habit): string => {
 
 export const isRequired = (q: QuestInstance) => q.kind !== 'bonus';
 
+/**
+ * The quest Today shows. Required quests come first; bonus quests only show
+ * when asked for (or when they're the one picked from the icons).
+ */
+export const currentQuest = (queue: QuestInstance[], showBonus: boolean): QuestInstance | undefined => {
+  const head = queue[0];
+  if (!queue.some(isRequired)) return showBonus ? head : undefined;
+  return head && (isRequired(head) || showBonus) ? head : queue.find(isRequired);
+};
+
 export const allAreas = AREAS.map((a) => a.id);

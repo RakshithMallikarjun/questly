@@ -150,7 +150,7 @@ export function Tour() {
           </div>
           <div className="row" style={{ gap: 4 }}>
             {step > 0 && <button className="btn btn-text btn-sm" onClick={back}>Back</button>}
-            <button className="btn btn-gold btn-sm" onClick={next} autoFocus>{step + 1 === steps.length ? "Let's go!" : 'Next'}</button>
+            <button className="btn btn-gold btn-sm" onClick={next} autoFocus data-autofocus>{step + 1 === steps.length ? "Let's go!" : 'Next'}</button>
           </div>
         </div>
       </div>

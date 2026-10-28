@@ -115,3 +115,12 @@ export const useFx = create<{ cheerAt: number; line: string | null; cheer: (line
   line: null,
   cheer: (line) => set({ cheerAt: Date.now(), line: line ?? null }),
 }));
+
+/** After a pop-up closes, put keyboard focus back on the quest's main button. */
+export const focusQuest = () =>
+  setTimeout(() => {
+    const el = document.querySelector<HTMLElement>('[data-tour="done"] .btn-green, .cleared-card .btn') ?? document.querySelector<HTMLElement>('.screen');
+    if (el && el.classList.contains('screen')) el.tabIndex = -1;
+    el?.focus({ preventScroll: true });
+  }, 60);
+

@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { TabTip } from '../components/Tour';
 import { useState } from 'react';
 import { BADGES } from '../game/content/badges';
@@ -117,7 +118,7 @@ export function Rewards() {
       )}
 
       {shown && (
-        <div className="overlay center" onClick={() => setBadge(null)}>
+        <Modal bare label={shown.name} onClose={() => setBadge(null)}><div className="overlay center" onClick={() => setBadge(null)}>
           <div className="sheet" style={{ borderRadius: 28, margin: 16, alignItems: 'center', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
             <span className="medal" style={{ width: 96, height: 96, borderRadius: 30, border: `4px solid ${g.badges[shown.id] ? shown.color : 'var(--line)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Star size={48} color={g.badges[shown.id] ? shown.color : '#3A2F63'} />
@@ -127,7 +128,7 @@ export function Rewards() {
             <p className="muted small">{g.badges[shown.id] ? `Unlocked ${new Date(g.badges[shown.id]).toLocaleDateString()}` : 'Not unlocked yet'}</p>
             <button className="btn btn-ghost btn-block" onClick={() => setBadge(null)}>Close</button>
           </div>
-        </div>
+        </div></Modal>
       )}
     </div>
   );

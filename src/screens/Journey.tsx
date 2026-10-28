@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { AREA_BY_ID } from '../game/content/areas';
 import { HABIT_PRESETS } from '../game/content/habits';
@@ -500,8 +501,8 @@ function AddHabitSheet({ g, taken, onPick, onClose }: { g: GameState; taken: Jou
   const presets = HABIT_PRESETS.filter((p) => !trackedPresets.has(p.id) && !titles.has(`Break free: ${p.name}`));
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Add a habit" onClick={(e) => e.stopPropagation()}>
+    <Modal bare label="Add a habit" onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ margin: 0 }}>Add a habit</h2>
 
         <label className="field">Write your own
@@ -544,6 +545,6 @@ function AddHabitSheet({ g, taken, onPick, onClose }: { g: GameState; taken: Jou
 
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }

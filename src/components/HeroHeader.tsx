@@ -6,7 +6,7 @@ import { strings } from '../i18n';
 import { useStore } from '../store';
 import { buzz, useFx } from '../fx';
 import { Buddy } from './Buddy';
-import { Coin, Flame } from './Icon';
+import { Coin, Flame, Shield } from './Icon';
 
 /** Your companion, dressed and in its current mood. */
 export function Avatar({ size = 52, mood, still }: { id?: string; name?: string; size?: number; mood?: Mood; still?: boolean }) {
@@ -122,6 +122,7 @@ export function HeroHeader() {
       >
         <span className={`flame-wrap ${streak ? 'lit' : ''} ${weeks >= 2 ? 'hot' : ''}`} style={{ width: 24, height: 24 }}><Flame size={flame} /></span>
         <b>{streak}</b>
+        {shields > 0 && <span className="shield-badge" aria-hidden="true"><Shield size={12} />{shields}</span>}
       </button>
       <button className="pill-stat" data-fx="coins" onClick={() => say(`${g.coins} coins. Spend them in Rewards.`, 30)} aria-label={`${g.coins} ${t.common.coins}`}>
         <Coin size={20} />

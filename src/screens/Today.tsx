@@ -1,12 +1,13 @@
+import { Modal } from '../components/Modal';
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { AREA_BY_ID } from '../game/content/areas';
 import { CHALLENGE_BY_ID } from '../game/content/challenges';
-import { swapsLeft, undoCostsStreak } from '../game/engine';
-import { isRequired } from '../game/generator';
+import { completeQuest, swapsLeft, undoCostsStreak } from '../game/engine';
+import { currentQuest, isRequired } from '../game/generator';
 import { cheerLine } from '../game/content/buddy';
 import { dueFor, dueKey, timeLabel as clock } from '../game/reminders';
-import { streakMultiplier } from '../game/xp';
+import { CLEAR_BONUS_XP, streakMultiplier } from '../game/xp';
 import type { QuestInstance } from '../game/types';
 import { Avatar, HeroHeader } from '../components/HeroHeader';
 import { AreaIcon, Icon } from '../components/Icon';
@@ -14,7 +15,7 @@ import { ChestCard } from '../components/Chest';
 import { SlipSheet } from '../components/SlipSheet';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
-import { buzz, chime, flyCoins, floatText, isCalm, useFx } from '../fx';
+import { buzz, chime, flyCoins, floatText, focusQuest, isCalm, useFx } from '../fx';
 import { enableNotifications, useNotify } from '../notify';
 import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
 import { JourneyCard } from './Journey';
@@ -47,8 +48,7 @@ export function Today() {
   const bonus = today.queue.filter((x) => !isRequired(x));
   // Once nothing required is left, the day is "done": bonus quests are optional.
   const dayDone = required.length === 0;
-  const head = today.queue[0];
-  const q = dayDone ? (showBonus ? head : undefined) : head && (isRequired(head) || showBonus) ? head : today.queue.find(isRequired);
+  const q = currentQuest(today.queue, showBonus);
   const all = [...today.doneQuests, ...today.queue];
   const doneKeys = new Set(today.done.map((d) => d.key));
   const mult = streakMultiplier(g.streak.current);
@@ -59,7 +59,9 @@ export function Today() {
     const xp = Math.round(q.xp * mult);
     buzz(g.profile.vibrate, 25);
     chime(g.profile.sound);
-    cheer(cheerLine(cheers.current++));
+    // The companion cheers, unless this quest clears the day (that has its own message).
+    const clearsDay = !today.cleared && completeQuest(g, q.key, new Date()).state.today?.cleared;
+    cheer(clearsDay ? undefined : cheerLine(cheers.current++));
     const r = e.currentTarget.getBoundingClientRect();
     floatText(r, `+${xp} XP`);
     flyCoins(r, 4);
@@ -80,6 +82,7 @@ export function Today() {
       && !confirm("Undo this quest? Today won't count as cleared any more, so today's streak day is taken back.")) return;
     undo(key);
     setRecent(null);
+    focusQuest();
   };
 
   const openDone = () => {
@@ -110,7 +113,7 @@ export function Today() {
             <span className="muted small">{today.done.length} of {all.length} done</span>
           )}
         </div>
-        <div className="quest-strip" aria-label="Today's quests" data-tour="strip">
+        <div className="quest-strip" role="group" aria-label="Today's quests" data-tour="strip">
           {all.map((x) => {
             const done = doneKeys.has(x.key);
             const now = x.key === q?.key;
@@ -186,7 +189,7 @@ export function Today() {
             {today.cleared ? 'Day cleared' : 'All done'}
           </span>
           <p className="soft">
-            {today.cleared ? `Streak: ${streakDays}. +50 bonus XP. Rest well, or keep going.` : t.today.allDone}
+            {today.cleared ? `Streak: ${streakDays}. +${CLEAR_BONUS_XP} bonus XP. Rest well, or keep going.` : t.today.allDone}
           </p>
           {today.cleared && <ChestCard hero />}
           {today.chest && (
@@ -200,7 +203,7 @@ export function Today() {
         </div>
       )}
 
-      {today.cleared && !dayDone && <ChestCard />}
+      {today.cleared && q && <ChestCard />}
 
       <section className="more-today" aria-label="More today">
         <h2 className="more-head">More today</h2>
@@ -287,11 +290,15 @@ export function Today() {
 /** "Done · +20 XP — Undo". Stays 10 seconds, and waits while you're on it. */
 function UndoToast({ xp, onUndo, onDone }: { xp: number; onUndo: () => void; onDone: () => void }) {
   const [hold, setHold] = useState(false);
+  const done = useRef(onDone);
+  useEffect(() => {
+    done.current = onDone;
+  });
   useEffect(() => {
     if (hold) return;
-    const id = setTimeout(onDone, 10_000);
+    const id = setTimeout(() => done.current(), 10_000);
     return () => clearTimeout(id);
-  }, [hold, onDone]);
+  }, [hold]);
   return (
     <div
       className="undo-toast"
@@ -321,8 +328,8 @@ function DueSheet({ q, onClose }: { q: QuestInstance; onClose: () => void }) {
     updateProfile({ dueTimes: next });
   };
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={t.today.finishByEdit} onClick={(e) => e.stopPropagation()}>
+    <Modal bare label={t.today.finishByEdit} onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2>{t.today.finishByEdit}</h2>
         <b>{q.title}</b>
         <input type="time" value={due} aria-label={t.today.finishByEdit} onChange={(e) => e.target.value && setDue(e.target.value)} />
@@ -330,6 +337,6 @@ function DueSheet({ q, onClose }: { q: QuestInstance; onClose: () => void }) {
         {profile.dueTimes?.[key] && <button className="btn btn-text" onClick={() => setDue(null)}>{t.today.finishByReset}</button>}
         <button className="btn btn-gold" onClick={onClose}>{t.common.save}</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }

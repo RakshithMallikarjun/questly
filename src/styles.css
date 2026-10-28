@@ -241,13 +241,18 @@ p { margin: 0; }
   background: var(--card); flex-shrink: 0;
 }
 .pill-stat b { font-family: var(--display); font-size: 17px; font-weight: 600; }
+.pill-stat { position: relative; }
+.shield-badge {
+  position: absolute; top: -6px; right: -4px; display: flex; align-items: center; gap: 1px; font-size: 11px; font-weight: 700;
+  background: var(--card-2); border: 1.5px solid var(--blue); border-radius: 9px; padding: 1px 4px 1px 3px; color: var(--text);
+}
 .hero-slim .speech { left: 0; top: calc(100% + 8px); }
 .hero-slim .speech.right { left: auto; right: 0; }
 .hero-slim .speech.right::before { left: auto; right: var(--arrow, 22px); }
 
 /* Undo after Done */
 .undo-toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 84px); z-index: 40;
+  position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 12px); z-index: 55;
   width: min(440px, calc(100vw - 32px)); display: flex; align-items: center; gap: 10px;
   background: var(--card-2); border: 2px solid var(--line-2); border-radius: 16px; padding: 8px 8px 8px 14px; font-size: 14px;
   animation: slide-down 0.25s ease; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -265,7 +270,7 @@ dialog.modal {
   border: 0; background: rgba(10, 6, 24, 0.82); color: var(--text); overflow: hidden;
 }
 dialog.modal::backdrop { background: transparent; }
-dialog.modal.tour { background: transparent; }
+dialog.modal.tour, dialog.modal.bare { background: transparent; }
 .xp-pill { font-size: 13px; color: var(--bg); background: var(--gold); border-radius: 10px; padding: 4px 10px; white-space: nowrap; }
 .quest-card.leaving { animation: card-out 0.38s cubic-bezier(.5,0,.75,0) forwards; pointer-events: none; }
 @keyframes card-out { to { transform: translateY(-60px) scale(0.85) rotate(-4deg); opacity: 0; } }
@@ -350,7 +355,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; 
 }
 @keyframes fade { from { opacity: 0; } }
 @keyframes slide-up { from { transform: translateY(40px); opacity: 0; } }
-@keyframes slide-down { from { transform: translate(-50%, 20px); opacity: 0; } }
+@keyframes slide-down { from { transform: translate(-50%, -20px); opacity: 0; } }
 @keyframes drop-in { from { transform: translateY(-16px); opacity: 0; } }
 @keyframes spin-in { from { transform: scale(0.3) rotate(-90deg); opacity: 0; } }
 
@@ -434,3 +439,6 @@ label.field.grow { min-width: 0; }
 .journey-tag.join { color: var(--green); }
 .journey-finish { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 3; font-family: var(--display); }
 .journey-start { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--display); font-size: 16px; color: var(--muted); }
+
+/* The Undo bar sits at the top, away from the next quest's buttons; other messages drop in below it. */
+body:has(.undo-toast) .toast-wrap { top: calc(env(safe-area-inset-top) + 72px); }
