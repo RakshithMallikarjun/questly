@@ -35,6 +35,10 @@ interface Store {
   removeCustomQuest: (id: string) => void;
   startJourney: (plan: E.JourneyPlan) => void;
   endJourney: () => void;
+  focus: (key: string) => void;
+  openChest: () => void;
+  announceUnlocks: () => void;
+  tourSeen: (id: string) => void;
   onboard: (p: Profile, habits: E.HabitChoice[]) => void;
   reset: () => void;
 }
@@ -77,6 +81,10 @@ export const useStore = create<Store>()(
         removeCustomQuest: (id) => run((s, now) => E.removeCustomQuest(s, id, now)),
         startJourney: (plan) => run((s, now) => E.startJourney(s, plan, now)),
         endJourney: () => run((s, now) => E.endJourney(s, now)),
+        focus: (key) => run((s, now) => E.focusQuest(s, key, now)),
+        openChest: () => run((s, now) => E.openChest(s, now)),
+        announceUnlocks: () => run((s, now) => E.announceUnlocks(s, now)),
+        tourSeen: (id) => run((s, now) => E.markTourSeen(s, id, now)),
         onboard: (p, habits) => set({ game: E.finishOnboarding(get().game, p, habits, new Date()), events: [] }),
         reset: () => set({ game: E.emptyState(), events: [] }),
       };

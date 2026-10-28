@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { useState } from 'react';
 import { HABIT_PRESETS } from '../game/content/habits';
 import { cleanDays, periodTotal } from '../game/engine';
@@ -8,10 +9,16 @@ import { SlipSheet } from '../components/SlipSheet';
 import { UrgeBreaker } from '../components/UrgeBreaker';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
+import { chime } from '../fx';
+import { Avatar } from '../components/HeroHeader';
+import { TabTip } from '../components/Tour';
 
 function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: string; onTempted: () => void; onSlip: () => void; onEdit: () => void }) {
   const t = strings();
   const logAmount = useStore((s) => s.logAmount);
+  const complete = useStore((s) => s.complete);
+  const sound = useStore((s) => s.game.profile.sound);
+  const checkin = useStore((s) => s.game.today?.queue.find((q) => q.kind === 'checkin' && q.habitId === h.id));
   const clean = cleanDays(h, day);
   const nextMilestone = [1, 7, 30, 90, 365].find((m) => m > clean);
   const answered = h.checkins[day];
@@ -68,6 +75,15 @@ function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: strin
         </>
       )}
 
+      {answered === 'clean' ? (
+        <div className="row well-done" role="status">
+          <Avatar size={40} mood="proud" still />
+          <span className="small grow">Clean today. Well done. Every clean day counts toward your streak and your chest.</span>
+        </div>
+      ) : checkin && (
+        <button className="btn btn-ghost" onClick={() => { chime(sound, [659, 784, 988]); complete(checkin.key); }}>🌱 I stayed clean today</button>
+      )}
+
       <button className="btn btn-pink" onClick={onTempted}>{t.quit.tempted}</button>
       <button className="btn btn-text" style={{ height: 36 }} onClick={onEdit}>{h.mode === 'limit' ? 'Change limit' : 'Switch to cutting down'}</button>
       {answered !== 'slip' && <button className="btn btn-text" onClick={onSlip}>{t.quit.slip}</button>}
@@ -94,8 +110,8 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
   const [period, setPeriod] = useState<LimitPeriod>('day');
   const presets = HABIT_PRESETS.filter((p) => !existing.includes(p.id));
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Add a habit" onClick={(e) => e.stopPropagation()}>
+    <Modal bare label="Add a habit" onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2>Add a habit to break</h2>
         <div className="options">
           {presets.map((p) => (
@@ -113,7 +129,7 @@ export function AddHabitSheet({ onClose }: { onClose: () => void }) {
         <button className="btn btn-gold" disabled={!name.trim()} onClick={() => { addHabit({ presetId: 'custom', name: name.trim(), mode, limit: mode === 'limit' ? limit : undefined, unit: mode === 'limit' ? 'times' : undefined, period: mode === 'limit' ? period : undefined }); onClose(); }}>Add</button>
         <button className="btn btn-text" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }
 
@@ -127,8 +143,8 @@ function EditHabitSheet({ h, onClose }: { h: Habit; onClose: () => void }) {
     onClose();
   };
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={`Edit ${h.name}`} onClick={(e) => e.stopPropagation()}>
+    <Modal bare label={`Edit ${h.name}`} onClose={onClose}><div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <h2>{h.name}</h2>
         <div className="row">
           <button className={`btn btn-sm grow ${mode === 'quit' ? 'btn-gold' : 'btn-ghost'}`} style={{ fontSize: 15 }} onClick={() => setMode('quit')}>Quit</button>
@@ -139,7 +155,7 @@ function EditHabitSheet({ h, onClose }: { h: Habit; onClose: () => void }) {
         <button className="btn btn-gold" onClick={save}>Save</button>
         <button className="btn btn-text" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </div></Modal>
   );
 }
 
@@ -153,6 +169,7 @@ export function Quit() {
   const day = g.today?.day ?? '';
   return (
     <div className="screen">
+      <TabTip tab="quit" />
       <div className="stack" style={{ gap: 4 }}>
         <h1>{t.quit.title}</h1>
         <p className="muted">{t.quit.subtitle}</p>

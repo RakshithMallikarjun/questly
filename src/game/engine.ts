@@ -11,7 +11,8 @@ import { addDays, daysBetween, gameDay, weekStart } from './date';
 import { checkinQuest, checkinTitle, generateBoard, isRequired } from './generator';
 import { JOIN_DAYS, MAX_LIVES, stagesFor } from './content/journeys';
 import { journeyDayComplete, journeyQuests } from './journey';
-import { hash } from './rng';
+import { hash, rng } from './rng';
+import { ITEM_BY_ID, newUnlocks } from './content/buddy';
 import type {
   AreaId, DayRecord, Difficulty, GameEvent, GameState, Habit, HabitMode, Journey, JourneyHabit, LimitPeriod, Profile, QuestInstance, StatId, Tier,
 } from './types';
@@ -31,7 +32,7 @@ const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 
 export const defaultProfile = (): Profile => ({
   name: '',
-  avatar: 'knight',
+  avatar: 'fox',
   areas: [],
   weekday: 'office',
   activity: 1,
@@ -42,7 +43,7 @@ export const defaultProfile = (): Profile => ({
   motivations: [],
   reminders: { morning: '08:00', evening: '20:30' },
   resetHour: 4,
-  sound: true,
+  sound: false,
   language: 'en',
 });
 
@@ -310,6 +311,7 @@ export const completeQuest = (input: GameState, key: string, now: Date, opts: { 
     if (h) {
       h.checkins[t.day] = 'clean';
       h.best = Math.max(h.best, cleanDays(h, t.day));
+      events.push({ type: 'cleanDay', id: h.id, label: h.name, value: cleanDays(h, t.day) });
     }
   }
 
@@ -814,3 +816,65 @@ export const endJourney = (input: GameState, now: Date): Result => {
   s.updatedAt = now.getTime();
   return { state: s, events };
 };
+
+// ---------------------------------------------------------------- fun
+
+/** Jump to a quest: move it to the front of the line. */
+export const focusQuest = (input: GameState, key: string, now: Date): Result => {
+  const idx = input.today?.queue.findIndex((q) => q.key === key) ?? -1;
+  if (!input.today || idx <= 0) return { state: input, events: [] };
+  const s = clone(input);
+  const [q] = s.today!.queue.splice(idx, 1);
+  s.today!.queue.unshift(q);
+  s.updatedAt = now.getTime();
+  return { state: s, events: [] };
+};
+
+export const chestReady = (s: GameState) => !!s.today?.cleared && !s.today.chest;
+
+/** Open the daily mystery chest (once a day, after clearing the day). */
+export const openChest = (input: GameState, now: Date): Result => {
+  if (!chestReady(input)) return { state: input, events: [] };
+  const s = clone(input);
+  const t = s.today!;
+  const r = rng(`chest|${t.day}|${s.createdAt}`);
+  const roll = r();
+  const events: GameEvent[] = [];
+  if (roll < 0.2 && s.streak.shields < MAX_SHIELDS) {
+    s.streak.shields += 1;
+    t.chest = { reward: 'shield', amount: 1 };
+  } else if (roll < 0.6) {
+    const amount = 15 + 5 * Math.floor(r() * 6); // 15 to 40
+    s.coins += amount;
+    t.chest = { reward: 'coins', amount };
+  } else {
+    const amount = 30 + 10 * Math.floor(r() * 5); // 30 to 70
+    addXp(s, amount, 0, events);
+    t.chest = { reward: 'xp', amount };
+  }
+  s.updatedAt = now.getTime();
+  return { state: s, events };
+};
+
+/** Announce newly unlocked companion items (once each). */
+export const announceUnlocks = (input: GameState, now: Date): Result => {
+  const fresh = newUnlocks(input);
+  if (!fresh.length) return { state: input, events: [] };
+  const s = clone(input);
+  s.profile.buddySeen = [...(s.profile.buddySeen ?? []), ...fresh];
+  s.updatedAt = now.getTime();
+  return { state: s, events: [{ type: 'unlock', label: fresh.map((id) => ITEM_BY_ID[id].name).join(', '), value: fresh.length, id: fresh[0] }] };
+};
+
+/** Mark a guided tour as seen. */
+export const markTourSeen = (input: GameState, id: string, now: Date): Result => {
+  if (input.profile.toursSeen?.includes(id)) return { state: input, events: [] };
+  const s = clone(input);
+  s.profile.toursSeen = [...(s.profile.toursSeen ?? []), id];
+  s.updatedAt = now.getTime();
+  return { state: s, events: [] };
+};
+
+/** True when undoing this quest would un-clear the day (and take back today's streak day). */
+export const undoCostsStreak = (s: GameState, key: string, now: Date): boolean =>
+  !!s.today?.cleared && undoQuest(s, key, now).state.today?.cleared === false;

@@ -114,12 +114,3 @@ export const STATS: { id: StatId; label: string; color: string }[] = [
   { id: 'charisma', label: 'Charisma', color: '#FF4FA3' },
   { id: 'discipline', label: 'Discipline', color: '#C3E44F' },
 ];
-
-export const AVATARS = [
-  { id: 'knight', label: 'Knight', from: '#8C7BFF', to: '#FF4FA3' },
-  { id: 'ranger', label: 'Ranger', from: '#3DDC97', to: '#4FC3FF' },
-  { id: 'mage', label: 'Mage', from: '#B58CFF', to: '#4FC3FF' },
-  { id: 'monk', label: 'Monk', from: '#FFC23D', to: '#FF7A2F' },
-  { id: 'rogue', label: 'Rogue', from: '#FF4FA3', to: '#FF7A2F' },
-  { id: 'bard', label: 'Bard', from: '#5EE3C1', to: '#FFC23D' },
-];

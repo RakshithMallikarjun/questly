@@ -12,6 +12,9 @@ import { Journey } from './screens/Journey';
 import { useStore } from './store';
 import { initNotifications } from './notify';
 import { flush, initSync } from './sync';
+import { Tour, pendingTour, startTour, useTour } from './components/Tour';
+import { newUnlocks } from './game/content/buddy';
+import { setCalm } from './fx';
 
 type Tab = 'today' | 'quit' | 'progress' | 'rewards' | 'profile';
 const TABS: Tab[] = ['today', 'quit', 'progress', 'rewards', 'profile'];
@@ -28,6 +31,25 @@ export default function App() {
   const language = useStore((s) => s.game.profile.language);
   const tick = useStore((s) => s.tick);
   const [tab, setTab] = useState<Page>(tabFromHash);
+  const game = useStore((s) => s.game);
+  const busy = useStore((s) => s.events.length > 0);
+  const touring = useTour((s) => s.id !== null);
+  const calm = !!game.profile.calm;
+  const tour = pendingTour(game);
+  const unlocks = newUnlocks(game).length;
+
+  useEffect(() => setCalm(calm), [calm]);
+
+  // Tours first, then announce any newly unlocked companion items.
+  useEffect(() => {
+    // Tours and unlock news only appear by themselves on Today, never over another tab (like Quit during an urge).
+    if (!game.onboarded || busy || touring || tab !== 'today') return;
+    if (tour) {
+      const id = setTimeout(() => startTour(tour), 700);
+      return () => clearTimeout(id);
+    }
+    if (unlocks) useStore.getState().announceUnlocks();
+  }, [game.onboarded, busy, touring, tour, unlocks, tab]);
   setLanguage(language);
   const t = strings();
 
@@ -81,6 +103,7 @@ export default function App() {
         ))}
       </nav>
       <Celebrations />
+      <Tour />
     </div>
   );
 }
