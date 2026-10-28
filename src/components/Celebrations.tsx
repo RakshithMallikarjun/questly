@@ -114,7 +114,7 @@ export function Celebrations() {
       <Modal bare label="Goal complete" onClose={() => pop()}><div className="overlay center">
         <div className="celebrate">
           <span className="label-caps" style={{ color: 'var(--green)', letterSpacing: 3, fontSize: 14 }}>Goal complete!</span>
-          <div className="ring"><div><Star size={80} color="#FFC23D" /></div></div>
+          <div className="ring"><div><Star size={80} color="var(--gold)" /></div></div>
           <h1>{e.label}</h1>
           <p className="soft">A new, harder goal has been unlocked. Keep climbing.</p>
           <div className="grow" />

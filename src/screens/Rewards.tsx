@@ -28,7 +28,7 @@ export function Rewards() {
       <TabTip tab="rewards" />
       <div className="between">
         <h1>{t.rewards.title}</h1>
-        <div className="row" style={{ background: '#3A2A12', border: '2px solid var(--gold)', borderRadius: 14, padding: '6px 12px', gap: 6 }}>
+        <div className="row" style={{ background: 'var(--gold-bg)', border: '2px solid var(--gold)', borderRadius: 14, padding: '6px 12px', gap: 6 }}>
           <Coin size={20} />
           <span style={{ fontFamily: 'var(--display)', fontSize: 18, color: 'var(--gold)' }}>{g.coins}</span>
         </div>
@@ -99,9 +99,9 @@ export function Rewards() {
           return (
             <button key={b.id} className="badge" onClick={() => setBadge(b.id)} aria-label={`${b.name}: ${b.desc}${on ? ', unlocked' : ', locked'}`}>
               <span className="medal" style={on ? { borderColor: b.color, background: 'var(--card-2)' } : undefined}>
-                <Star size={28} color={on ? b.color : '#3A2F63'} />
+                <Star size={28} color={on ? b.color : 'var(--off)'} />
               </span>
-              <span style={{ color: on ? 'var(--text)' : '#8F86B3' }}>{b.name}</span>
+              <span style={{ color: on ? 'var(--text)' : 'var(--off-text)' }}>{b.name}</span>
             </button>
           );
         })}
@@ -121,7 +121,7 @@ export function Rewards() {
         <Modal bare label={shown.name} onClose={() => setBadge(null)}><div className="overlay center" onClick={() => setBadge(null)}>
           <div className="sheet" style={{ borderRadius: 28, margin: 16, alignItems: 'center', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
             <span className="medal" style={{ width: 96, height: 96, borderRadius: 30, border: `4px solid ${g.badges[shown.id] ? shown.color : 'var(--line)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Star size={48} color={g.badges[shown.id] ? shown.color : '#3A2F63'} />
+              <Star size={48} color={g.badges[shown.id] ? shown.color : 'var(--off)'} />
             </span>
             <h2>{shown.name}</h2>
             <p className="soft">{shown.desc}</p>

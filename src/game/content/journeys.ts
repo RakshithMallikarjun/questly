@@ -41,12 +41,12 @@ export interface Stage {
 /** The map's zones. The last stage ends on the journey's final day. */
 export const stagesFor = (length: number): Stage[] => {
   const base: Stage[] = [
-    { name: 'Spark Meadow', from: 1, to: 7, color: '#3DDC97', xp: 150, coins: 30 },
-    { name: "Builder's Forest", from: 8, to: 21, color: '#4FC3FF', xp: 300, coins: 60 },
-    { name: 'Grit Mountains', from: 22, to: 45, color: '#8C7BFF', xp: 500, coins: 100 },
-    { name: 'Summit of Mastery', from: 46, to: 66, color: '#FFC23D', xp: 1000, coins: 250 },
+    { name: 'Spark Meadow', from: 1, to: 7, color: 'var(--green)', xp: 150, coins: 30 },
+    { name: "Builder's Forest", from: 8, to: 21, color: 'var(--blue)', xp: 300, coins: 60 },
+    { name: 'Grit Mountains', from: 22, to: 45, color: 'var(--purple)', xp: 500, coins: 100 },
+    { name: 'Summit of Mastery', from: 46, to: 66, color: 'var(--gold)', xp: 1000, coins: 250 },
   ];
-  if (length > 66) base.push({ name: "Legend's Peak", from: 67, to: length, color: '#FF4FA3', xp: 1500, coins: 350 });
+  if (length > 66) base.push({ name: "Legend's Peak", from: 67, to: length, color: 'var(--pink)', xp: 1500, coins: 350 });
   else base[base.length - 1].to = length;
   return base;
 };

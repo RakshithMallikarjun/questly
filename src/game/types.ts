@@ -29,6 +29,9 @@ export type Difficulty = 'gentle' | 'balanced' | 'hardcore';
 export type Weekday = 'student' | 'office' | 'shift' | 'flexible';
 export type HealthMetric = 'steps' | 'sleepHours' | 'workoutMinutes' | 'mindfulMinutes';
 
+/** Colour themes the player can pick. */
+export type ThemeChoice = 'auto' | 'ocean' | 'daylight' | 'classic';
+
 export interface QuestDef {
   id: string;
   area: AreaId;
@@ -108,6 +111,8 @@ export interface Profile {
   vibrate?: boolean;
   /** Calm mode: less motion and no confetti. */
   calm?: boolean;
+  /** Colour theme. Missing or 'auto' follows the phone: Ocean when dark, Daylight when light. */
+  theme?: ThemeChoice;
   /** What your companion wears, by slot (head, face, neck, color). */
   buddy?: { head?: string; face?: string; neck?: string; color?: string };
   /** Dress-up items already announced, so each unlock is celebrated once. */

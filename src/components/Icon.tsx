@@ -31,7 +31,7 @@ export function Icon({ name, size = 24, color = 'currentColor', stroke = 2.2, st
 }
 
 export const Flame = ({ size = 24 }: { size?: number }) => (
-  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="#FF7A2F"><path d="M12 2c1 3.5 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z" /></svg>
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="var(--orange)"><path d="M12 2c1 3.5 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z" /></svg>
 );
 
 export const Coin = ({ size = 24 }: { size?: number }) => (
@@ -39,10 +39,10 @@ export const Coin = ({ size = 24 }: { size?: number }) => (
 );
 
 export const Shield = ({ size = 24 }: { size?: number }) => (
-  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="#4FC3FF"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" /></svg>
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="var(--blue)"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" /></svg>
 );
 
-export const Star = ({ size = 28, color = '#17112B' }: { size?: number; color?: string }) => (
+export const Star = ({ size = 28, color = 'var(--on-accent)' }: { size?: number; color?: string }) => (
   <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z" /></svg>
 );
 
