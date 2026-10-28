@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AREAS, AREA_BY_ID } from '../game/content/areas';
 import type { AreaId, Difficulty, Energy, GameState, Profile as P, Tier } from '../game/types';
 import { Avatar } from '../components/HeroHeader';
@@ -6,6 +6,8 @@ import { Icon } from '../components/Icon';
 import { ReminderSettings } from '../components/ReminderSettings';
 import { SwitchRow } from '../components/Switch';
 import { HealthSetup } from '../components/HealthSetup';
+import { BuddyPage } from '../components/BuddyPage';
+import { startTour } from '../components/Tour';
 import { perWord } from '../components/LimitFields';
 import { AddHabitSheet } from './Quit';
 import { strings } from '../i18n';
@@ -27,7 +29,7 @@ function Segmented<T extends string | number>({ value, options, onPick }: { valu
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-type Page = 'reminders' | 'health' | 'quests' | 'areas' | 'habits' | 'custom' | 'data';
+type Page = 'buddy' | 'reminders' | 'health' | 'quests' | 'areas' | 'habits' | 'custom' | 'data';
 
 const clock = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -55,6 +57,12 @@ export function Profile() {
   const [quest, setQuest] = useState({ title: '', area: (g.profile.areas[0] ?? 'fitness') as AreaId, tier: 1 as Tier, everyDay: true });
   const [addingQuest, setAddingQuest] = useState(false);
   const [page, setPage] = useState<Page | null>(null);
+  useEffect(() => {
+    if (sessionStorage.getItem('questly-open') === 'buddy') {
+      sessionStorage.removeItem('questly-open');
+      setPage('buddy');
+    }
+  }, []);
   const p = g.profile;
   const setP = (patch: Partial<P>) => st.updateProfile(patch);
 
@@ -86,6 +94,7 @@ export function Profile() {
   };
 
   const pages: { id: Page; icon: string; color: string; label: string; sub: string }[] = [
+    { id: 'buddy', icon: 'paw', color: 'var(--gold)', label: 'My companion', sub: 'Pick your creature and dress it up' },
     { id: 'reminders', icon: 'clock', color: 'var(--purple)', label: t.remind.section, sub: reminderSummary(p.reminders) },
     { id: 'health', icon: 'heart', color: 'var(--pink)', label: 'Apple Health', sub: healthSub(g) },
     { id: 'quests', icon: 'today', color: 'var(--gold)', label: 'Quest settings', sub: `${p.difficulty[0].toUpperCase()}${p.difficulty.slice(1)} · ${p.minutes} min a day` },
@@ -103,6 +112,8 @@ export function Profile() {
           <button className="icon-btn" aria-label="Back" onClick={() => setPage(null)}><Icon name="back" /></button>
           <h1 style={{ fontSize: 24 }}>{meta.label}</h1>
         </div>
+
+        {page === 'buddy' && <BuddyPage />}
 
         {page === 'reminders' && <ReminderSettings />}
 
@@ -124,6 +135,8 @@ export function Profile() {
               </select>
             </div>
             <SwitchRow label={t.profile.sound} on={p.sound} onChange={(v) => setP({ sound: v })} />
+            <SwitchRow label="Vibration (Android)" on={p.vibrate !== false} onChange={(v) => setP({ vibrate: v })} />
+            <SwitchRow label="Calm mode (less motion)" on={!!p.calm} onChange={(v) => setP({ calm: v })} />
             <div className="divider" />
             <button className="btn btn-ghost btn-sm" onClick={() => st.rebuild()}>{t.profile.rebuild}</button>
             <span className="muted tiny">Use this after changing areas or time, to get a new set of quests for today.</span>
@@ -216,6 +229,7 @@ export function Profile() {
                   <option value="en">English</option>
                 </select>
               </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => startTour('welcome')}>Replay the app tour</button>
               <button className="btn btn-ghost btn-sm" onClick={() => confirm('Retake the questionnaire? Your XP, coins and badges stay.') && st.replace({ ...g, onboarded: false })}>{t.profile.retake}</button>
               <button className="btn btn-text btn-sm" style={{ color: 'var(--pink)' }} onClick={() => confirm(t.profile.resetConfirm) && st.reset()}>{t.profile.reset}</button>
             </div>
@@ -230,7 +244,7 @@ export function Profile() {
   return (
     <div className="screen">
       <div className="card row" style={{ gap: 14 }}>
-        <Avatar id={p.avatar} name={p.name} size={56} />
+        <button className="buddy-tile" onClick={() => setPage('buddy')} aria-label="My companion"><Avatar size={64} /></button>
         <div className="grow" style={{ minWidth: 0 }}>
           <h1 style={{ fontSize: 22 }}>{p.name}</h1>
           {!syncConfigured ? (

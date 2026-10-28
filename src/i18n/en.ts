@@ -142,7 +142,7 @@ const en = {
     time: 'Daily time for quests',
     energy: 'Most energy',
     resetHour: 'New day starts at',
-    sound: 'Sound and vibration',
+    sound: 'Sound effects',
     areas: 'Life areas',
     habits: 'Habits to break',
     customQuests: 'My own quests',

@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import type { MouseEvent } from 'react';
 import { AREA_BY_ID } from '../game/content/areas';
 import { CHALLENGE_BY_ID } from '../game/content/challenges';
 import { swapsLeft } from '../game/engine';
 import { dueFor, dueKey, timeLabel as clock } from '../game/reminders';
 import { streakMultiplier } from '../game/xp';
 import type { QuestInstance } from '../game/types';
-import { HeroHeader } from '../components/HeroHeader';
-import { Icon, Star } from '../components/Icon';
+import { Avatar, HeroHeader } from '../components/HeroHeader';
+import { AreaIcon, Icon } from '../components/Icon';
+import { ChestCard } from '../components/Chest';
 import { SlipSheet } from '../components/SlipSheet';
 import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
-import { buzz, chime } from '../fx';
+import { burst, buzz, chime, flyCoins, floatText, isCalm, useFx } from '../fx';
 import { enableNotifications, useNotify } from '../notify';
 import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
 import { JourneyCard } from './Journey';
@@ -18,11 +20,15 @@ import { JourneyCard } from './Journey';
 const colorFor = (q: QuestInstance) =>
   q.kind === 'journey' ? '#5EE3C1' : q.kind === 'main' ? '#FFC23D' : q.kind === 'checkin' ? '#4FC3FF' : q.kind === 'bonus' ? '#FF4FA3' : q.area ? AREA_BY_ID[q.area].color : '#C3E44F';
 
+export const iconFor = (q: QuestInstance) => (q.kind === 'journey' ? 'journey' : q.kind === 'checkin' ? 'checkin' : q.area ?? 'bonus');
+
 const timeLabel = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
 export function Today() {
   const g = useStore((s) => s.game);
-  const { complete, skip, swap, undo, challengeDay } = useStore.getState();
+  const { complete, skip, swap, undo, challengeDay, focus } = useStore.getState();
+  const cheer = useFx((s) => s.cheer);
+  const [leaving, setLeaving] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [slipFor, setSlipFor] = useState<string | null>(null);
   const [editDue, setEditDue] = useState(false);
@@ -37,11 +43,25 @@ export function Today() {
   const onlyBonusLeft = today.queue.length > 0 && today.queue.every((x) => x.kind === 'bonus');
   const mult = streakMultiplier(g.streak.current);
 
-  const finish = () => {
-    if (!q) return;
-    buzz(g.profile.sound, 25);
+  const finish = (e: MouseEvent<HTMLButtonElement>) => {
+    if (!q || leaving) return;
+    buzz(g.profile.vibrate, 25);
     chime(g.profile.sound);
-    complete(q.key);
+    cheer();
+    const r = e.currentTarget.getBoundingClientRect();
+    floatText(r, `+${Math.round(q.xp * mult)} XP`);
+    flyCoins(r, 6);
+    burst(false, { x: (r.left + r.width / 2) / window.innerWidth, y: r.top / window.innerHeight });
+    if (isCalm()) {
+      complete(q.key);
+      return;
+    }
+    const key = q.key;
+    setLeaving(key);
+    setTimeout(() => {
+      complete(key);
+      setLeaving(null);
+    }, 380);
   };
 
   const challenge = g.challenge ? CHALLENGE_BY_ID[g.challenge.id] : null;
@@ -57,15 +77,39 @@ export function Today() {
         </div>
       )}
 
-      <div className="between">
-        <h1 style={{ fontSize: 24 }}>{t.today.title}</h1>
-        <div className="dots" aria-label={`${today.done.length} of ${all.length} quests done`}>
-          {all.map((x) => <span key={x.key} className={doneKeys.has(x.key) ? 'on' : x.key === q?.key ? 'now' : ''} />)}
+      <div className="stack" style={{ gap: 10 }}>
+        <div className="between">
+          <h1 style={{ fontSize: 24 }}>{t.today.title}</h1>
+          <span className="muted small">{today.done.length} of {all.length} done</span>
+        </div>
+        <div className="quest-strip" role="tablist" aria-label="Today's quests" data-tour="strip">
+          {all.map((x) => {
+            const done = doneKeys.has(x.key);
+            const now = x.key === q?.key;
+            const c = colorFor(x);
+            return (
+              <button
+                key={x.key}
+                role="tab"
+                aria-selected={now}
+                aria-label={`${x.title}${done ? ' (done)' : ''}`}
+                className={`qs ${done ? 'done' : ''} ${now ? 'now' : ''}`}
+                style={{ borderColor: c, background: done ? c : now ? `color-mix(in srgb, ${c} 28%, var(--card))` : 'var(--card)' }}
+                disabled={done}
+                onClick={() => { if (!now) { focus(x.key); buzz(g.profile.vibrate, 10); } }}
+              >
+                <AreaIcon name={iconFor(x)} size={18} color={done ? '#17112B' : c} stroke={2.4} />
+                {done && <span className="qs-tick"><Icon name="check" size={10} color="#fff" stroke={4} /></span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
+      {today.cleared && <ChestCard />}
+
       {q ? (
-        <div key={q.key} className="quest-card" style={{ borderColor: colorFor(q) }}>
+        <div key={q.key} className={`quest-card ${leaving === q.key ? 'leaving' : ''}`} style={{ borderColor: colorFor(q) }} data-tour="quest">
           {today.cleared && onlyBonusLeft && (
             <div className="center" style={{ color: 'var(--gold)', fontFamily: 'var(--display)', fontSize: 22 }}>{t.today.cleared}</div>
           )}
@@ -75,8 +119,8 @@ export function Today() {
             </span>
             <span className="xp-pill">+{Math.round(q.xp * mult)} XP</span>
           </div>
-          <div className="quest-emblem" style={{ background: colorFor(q), boxShadow: `0 10px 40px ${colorFor(q)}55` }}>
-            <Star size={60} />
+          <div className="quest-emblem float" style={{ background: colorFor(q), boxShadow: `0 10px 40px ${colorFor(q)}55` }}>
+            <AreaIcon name={iconFor(q)} size={64} color="#17112B" stroke={2.2} />
           </div>
           <div className="quest-title">{q.title}</div>
           <p className="soft center">{q.why}{q.kind === 'main' ? ` (${t.today.double})` : ''}</p>
@@ -105,8 +149,14 @@ export function Today() {
         </div>
       ) : (
         <div className="quest-card center" style={{ minHeight: 240, borderColor: 'var(--gold)', background: 'linear-gradient(160deg, #3A2A12 0%, var(--nav) 100%)', justifyContent: 'center', alignItems: 'center' }}>
+          <Avatar size={110} />
           <span style={{ fontFamily: 'var(--display)', fontSize: 34, color: 'var(--gold)' }}>{t.today.cleared}</span>
           <p className="soft">{today.cleared ? fmt(t.today.clearedBody, { n: `${g.streak.current} ${g.streak.current === 1 ? 'day' : 'days'}` }) : t.today.allDone}</p>
+          {today.chest && (
+            <span className="xp-pill" style={{ fontSize: 14 }}>
+              Chest: {today.chest.reward === 'coins' ? `+${today.chest.amount} coins` : today.chest.reward === 'shield' ? 'streak shield' : `+${today.chest.amount} XP`}
+            </span>
+          )}
         </div>
       )}
 

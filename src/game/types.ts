@@ -104,6 +104,16 @@ export interface Profile {
   dueTimes?: Record<string, string>;
   resetHour: number;
   sound: boolean;
+  /** Phone vibration on quest wins. Missing means on. */
+  vibrate?: boolean;
+  /** Calm mode: less motion and no confetti. */
+  calm?: boolean;
+  /** What your companion wears, by slot (head, face, neck, color). */
+  buddy?: { head?: string; face?: string; neck?: string; color?: string };
+  /** Dress-up items already announced, so each unlock is celebrated once. */
+  buddySeen?: string[];
+  /** Guided tours already seen (the first-run tour and each "What's new"). */
+  toursSeen?: string[];
   language: string;
 }
 
@@ -146,6 +156,8 @@ export interface TodayState {
   cleared: boolean;
   rest: boolean;
   /** What clearing the day changed, so an undo can put it back. */
+  /** Today's mystery chest, once opened. */
+  chest?: { reward: 'coins' | 'xp' | 'shield'; amount: number };
   clearUndo?: { prevLast: string | null; prevCurrent: number; prevBest: number; prevShields: number; xp: number; coins: number };
 }
 
@@ -261,7 +273,7 @@ export interface GameState {
 export interface GameEvent {
   type:
     | 'levelUp' | 'badge' | 'dayCleared' | 'streak' | 'goal' | 'shieldUsed' | 'tierUp'
-    | 'journeyDay' | 'journeyMilestone' | 'journeyDone' | 'lifeLost' | 'lifeRestored';
+    | 'journeyDay' | 'journeyMilestone' | 'journeyDone' | 'lifeLost' | 'lifeRestored' | 'unlock';
   value?: number;
   id?: string;
   label?: string;

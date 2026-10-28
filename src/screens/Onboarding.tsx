@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { LimitFields } from '../components/LimitFields';
 import { SwitchRow } from '../components/Switch';
-import { AREAS, AREA_BY_ID, AVATARS } from '../game/content/areas';
+import { AREAS, AREA_BY_ID } from '../game/content/areas';
+import { SPECIES, speciesFor } from '../game/content/buddy';
+import { Buddy } from '../components/Buddy';
 import { HABIT_PRESETS } from '../game/content/habits';
 import { defaultProfile, goalTarget, type HabitChoice } from '../game/engine';
 import type { AreaId, Difficulty, Energy, LimitPeriod, Profile, Weekday } from '../game/types';
 import { Icon } from '../components/Icon';
-import { Avatar } from '../components/HeroHeader';
 import { useStore } from '../store';
 import { burst } from '../fx';
 import { signIn, syncConfigured, useSync } from '../sync';
@@ -111,14 +112,17 @@ export function Onboarding() {
           <label className="field">What should we call you?
             <input type="text" value={p.name} maxLength={24} placeholder="Your name" onChange={(e) => set({ name: e.target.value })} />
           </label>
-          <span className="muted small">Pick your avatar</span>
-          <div className="options" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-            {AVATARS.map((a) => (
-              <button key={a.id} className={`option ${p.avatar === a.id ? 'on' : ''}`} style={{ flexDirection: 'column', padding: 12, borderColor: p.avatar === a.id ? 'var(--gold)' : undefined }} onClick={() => set({ avatar: a.id })}>
-                <Avatar id={a.id} name={p.name || a.label} size={48} />
-                <span className="small">{a.label}</span>
-              </button>
-            ))}
+          <span className="muted small">Pick your companion. It cheers you on and grows as you level up.</span>
+          <div className="buddy-grid">
+            {SPECIES.map((a) => {
+              const on = speciesFor(p.avatar) === a.id;
+              return (
+                <button key={a.id} className={`option ${on ? 'on' : ''}`} style={{ flexDirection: 'column', padding: 6, gap: 0, borderColor: on ? 'var(--gold)' : undefined }} onClick={() => set({ avatar: a.id })} aria-pressed={on}>
+                  <Buddy species={a.id} stage={1} mood={on ? 'cheer' : 'happy'} size={64} still={!on} />
+                  <span className="small">{a.label}</span>
+                </button>
+              );
+            })}
           </div>
         </>
       );
