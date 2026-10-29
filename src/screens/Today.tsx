@@ -196,7 +196,7 @@ export function Today() {
       {q ? (
         <div className="deck" style={{ paddingBottom: ghosts.length * 12 }}>
         {ghosts.map((c, i) => (
-          <div key={i} className="deck-ghost" aria-hidden="true" style={{ borderColor: c, bottom: (ghosts.length - 1 - i) * 12, transform: `scale(${0.95 - i * 0.05})`, zIndex: -1 - i }} />
+          <div key={i} className="deck-ghost" aria-hidden="true" style={{ borderColor: c, background: `color-mix(in srgb, ${c} ${18 + i * 10}%, var(--card))`, bottom: (ghosts.length - 1 - i) * 12, transform: `scale(${0.95 - i * 0.05})`, zIndex: -1 - i }} />
         ))}
         <div
           key={q.key}
