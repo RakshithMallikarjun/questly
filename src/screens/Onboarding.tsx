@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { create } from 'zustand';
 import { LimitFields } from '../components/LimitFields';
 import { SwitchRow } from '../components/Switch';
 import { AREAS, AREA_BY_ID } from '../game/content/areas';
@@ -11,6 +12,8 @@ import { Icon } from '../components/Icon';
 import { useStore } from '../store';
 import { burst } from '../fx';
 import { signIn, syncConfigured, useSync } from '../sync';
+import { HealthConnectSteps, HealthNotice, isIPhone } from '../components/HealthSetup';
+import { strings } from '../i18n';
 
 type Opt<T> = { value: T; label: string; hint?: string };
 
@@ -31,6 +34,15 @@ function Choice<T extends string | number>({ options, value, onPick }: { options
 }
 
 const TOTAL = 12;
+/** Optional Apple Health screen, shown on iPhone after the profile is saved. */
+const HEALTH_STEP = TOTAL + 1;
+
+/**
+ * True while the optional Apple Health screen is showing. Setup is already
+ * saved by then; App keeps this screen up until it is closed. Not stored: if
+ * iOS reloads the app while you are in Shortcuts, you land on Today instead.
+ */
+export const useSetupFlow = create<{ healthOffer: boolean }>(() => ({ healthOffer: false }));
 
 export function Onboarding() {
   const onboard = useStore((s) => s.onboard);
@@ -44,7 +56,21 @@ export function Onboarding() {
   const [perQuest, setPerQuest] = useState(true);
 
   const sync = useSync();
+  const healthKey = useStore((s) => s.game.profile.healthKey);
+  const th = strings().health;
   const set = (patch: Partial<Profile>) => setP((x) => ({ ...x, ...patch }));
+
+  // Screen readers: move focus to the new step's heading on every step change.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    heading.current?.focus();
+    document.querySelector('.screen')?.scrollTo(0, 0);
+  }, [step]);
 
   const habits: HabitChoice[] = useMemo(() => {
     const list: HabitChoice[] = habitIds.map((id) => {
@@ -80,7 +106,13 @@ export function Onboarding() {
     };
     onboard(profile, habits);
     burst(true);
+    // Setup is saved now, so a trip to the Shortcuts app can't lose any answers.
+    if (isIPhone() && !useStore.getState().game.profile.healthKey) {
+      useSetupFlow.setState({ healthOffer: true });
+      setStep(HEALTH_STEP);
+    }
   };
+  const closeHealth = () => useSetupFlow.setState({ healthOffer: false });
 
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
@@ -285,6 +317,17 @@ export function Onboarding() {
         </>
       );
       break;
+    case HEALTH_STEP:
+      title = th.setupTitle;
+      sub = th.setupSub;
+      body = (
+        <div className="card stack" style={{ gap: 18 }}>
+          <HealthNotice />
+          <HealthConnectSteps />
+          <span className="muted small">{th.setupLater}</span>
+        </div>
+      );
+      break;
     default:
       title = `Your adventure begins, ${p.name}!`;
       sub = 'Here are your goals for the next 30 days.';
@@ -304,10 +347,11 @@ export function Onboarding() {
   }
 
   const isReveal = step >= TOTAL;
+  const isHealth = step === HEALTH_STEP;
   return (
     <div className="screen">
       <div className="row">
-        {step > 0 && <button className="icon-btn" aria-label="Back" onClick={prev}><Icon name="back" /></button>}
+        {step > 0 && !isHealth && <button className="icon-btn" aria-label="Back" onClick={prev}><Icon name="back" /></button>}
         <div className="bar grow" style={{ background: 'var(--card)' }}>
           <span style={{ width: `${Math.min(100, Math.round(((step + 1) / (TOTAL + 1)) * 100))}%`, background: 'linear-gradient(90deg, var(--gold), var(--orange))' }} />
         </div>
@@ -315,12 +359,19 @@ export function Onboarding() {
       </div>
       <div className="stack" style={{ gap: 8 }}>
         <span className="label-caps" style={{ color: 'var(--green)' }}>{isReveal ? 'Ready' : 'Create your hero'}</span>
-        <h1>{title}</h1>
+        <h1 ref={heading} tabIndex={-1} className="step-heading">{title}</h1>
         <p className="muted">{sub}</p>
       </div>
       {body}
       <div className="grow" />
-      {isReveal ? (
+      {isHealth ? (
+        // Stays in view while you read, so skipping is as easy as connecting.
+        <div className="setup-footer">
+          {healthKey
+            ? <button className="btn btn-gold btn-block" onClick={closeHealth}>{th.startQuest}</button>
+            : <button className="btn btn-ghost btn-block" onClick={closeHealth}>{th.maybeLater}</button>}
+        </div>
+      ) : isReveal ? (
         <button className="btn btn-gold btn-block" onClick={finish}>Start my first quest</button>
       ) : (
         <button className="btn btn-gold btn-block" disabled={!canNext} onClick={next}>

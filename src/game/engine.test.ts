@@ -173,6 +173,13 @@ describe('health data', () => {
     s = applyHealth(s, day, { steps: 11000 }, at('2026-11-02', 22)).state;
     expect(s.today!.done.some((d) => d.key === 'daily-f9-1' && d.auto)).toBe(true);
   });
+
+  it('keeps the Apple Health key when setup is finished or retaken', () => {
+    const s = start('2026-11-02');
+    const withKey = { ...s, profile: { ...s.profile, healthKey: 'k'.repeat(28) }, onboarded: false };
+    const again = finishOnboarding(withKey, profile(), [], at('2026-11-03'));
+    expect(again.profile.healthKey).toBe('k'.repeat(28));
+  });
 });
 
 describe('limit periods', () => {

@@ -376,6 +376,22 @@ dialog.modal.tour, dialog.modal.bare { background: transparent; }
 .xp-pill { font-size: 13px; color: var(--on-accent); background: var(--gold); border-radius: 10px; padding: 4px 10px; white-space: nowrap; }
 .quest-card.leaving { animation: card-out 0.38s cubic-bezier(.5,0,.75,0) forwards; pointer-events: none; }
 @keyframes card-out { to { transform: translateY(-60px) scale(0.85) rotate(-4deg); opacity: 0; } }
+/* Swipe the quest card sideways to browse (vertical scrolling stays native). */
+.quest-card.swipeable { touch-action: pan-y; }
+.quest-card.enter-next { animation: card-in-next 0.25s ease-out; }
+.quest-card.enter-prev { animation: card-in-prev 0.25s ease-out; }
+@keyframes card-in-next { from { transform: translateX(48px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes card-in-prev { from { transform: translateX(-48px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Habit tip with its credit (day cleared, level-up, after a slip) */
+.tip-line {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-radius: 14px;
+  background: var(--card); border-left: 4px solid var(--gold); text-align: left; align-self: stretch;
+}
+.tip-text { font-size: 14px; line-height: 1.4; color: var(--text); }
+.health-notice { border-left: 3px solid var(--blue); padding-left: 10px; }
+.step-heading:focus:not(:focus-visible) { outline: none; }
+.setup-footer { position: sticky; bottom: 0; z-index: 2; padding: 12px 0 calc(env(safe-area-inset-bottom) + 4px); background: linear-gradient(to bottom, transparent 0, var(--bg) 12px); }
 .quest-emblem.float { animation: emblem-float 3.2s ease-in-out infinite; }
 @keyframes emblem-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 
@@ -541,3 +557,6 @@ label.field.grow { min-width: 0; }
 .journey-tag.join { color: var(--green); }
 .journey-finish { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 3; font-family: var(--display); }
 .journey-start { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--display); font-size: 16px; color: var(--muted); }
+
+/* Read by screen readers only */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

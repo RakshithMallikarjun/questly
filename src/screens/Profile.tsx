@@ -58,9 +58,10 @@ export function Profile() {
   const [addingQuest, setAddingQuest] = useState(false);
   const [page, setPage] = useState<Page | null>(null);
   useEffect(() => {
-    if (sessionStorage.getItem('questly-open') === 'buddy') {
+    const open = sessionStorage.getItem('questly-open');
+    if (open === 'buddy' || open === 'health') {
       sessionStorage.removeItem('questly-open');
-      setPage('buddy');
+      setPage(open);
     }
   }, []);
   const p = g.profile;

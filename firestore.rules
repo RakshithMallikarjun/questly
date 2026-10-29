@@ -12,6 +12,8 @@ service cloud.firestore {
     match /health/{key} {
       allow get, create, update: if key.size() >= 24 && key.size() <= 64
         && (request.method == 'get' || request.resource.data.size() <= 10);
+      // "Disconnect Apple Health" deletes the inbox, again only with the key.
+      allow delete: if key.size() >= 24 && key.size() <= 64;
     }
   }
 }

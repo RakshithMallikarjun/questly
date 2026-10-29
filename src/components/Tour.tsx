@@ -25,7 +25,7 @@ const TOURS: Record<string, (g: GameState) => Step[]> = {
   welcome: (g) => [
     { art: 'buddy', title: `Hi ${g.profile.name || 'there'}!`, body: `I'm your ${creature(g)}. Here's Questly in 4 quick steps.` },
     { target: '[data-tour="quest"]', title: 'One quest at a time', body: 'This is your next quest. Do it in real life, then come back here.' },
-    { target: '[data-tour="done"]', title: 'Tap Done', body: 'You earn XP and coins. Tapped by mistake? Undo shows up right after. "Not now" saves a quest for later.' },
+    { target: '[data-tour="done"]', title: 'Tap Done', body: 'You earn XP and coins. Tapped by mistake? Undo shows up right after. Swipe the card to see your other quests, or tap Later to come back to one.' },
     { art: 'chest', title: 'Clear the day, open a chest', body: "Finish most of today's quests to keep your streak and open a mystery chest. Your other tabs are below. I'll give you a tip the first time you open each one." },
   ],
   'new-companion': (g) => [

@@ -103,7 +103,7 @@ function HabitCard({ h, day, onTempted, onSlip, onEdit }: { h: Habit; day: strin
 
 export function AddHabitSheet({ onClose }: { onClose: () => void }) {
   const addHabit = useStore((s) => s.addHabit);
-  const existing = useStore((s) => s.game.habits.map((h) => h.presetId));
+  const existing = useStore((s) => s.game.habits).map((h) => h.presetId);
   const [name, setName] = useState('');
   const [mode, setMode] = useState<'quit' | 'limit'>('quit');
   const [limit, setLimit] = useState(3);

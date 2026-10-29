@@ -10,6 +10,7 @@ import { Star } from './Icon';
 import { Avatar } from './HeroHeader';
 import { EVOLVE_LEVELS, ITEM_BY_ID, SPECIES, speciesFor, stageForLevel, STAGE_NAMES } from '../game/content/buddy';
 import { Buddy } from './Buddy';
+import { TipLine } from './TipLine';
 
 /** Shows level-ups, badges and other wins, one at a time. */
 export function Celebrations() {
@@ -83,6 +84,7 @@ export function Celebrations() {
             {g.streak.current > 1 ? `${g.streak.current} days in a row. ` : ''}
             {lv % 5 === 1 && lv > 1 ? `New title: ${titleFor(lv)}!` : `${next - lv} more ${next - lv === 1 ? 'level' : 'levels'} until you reach the rank of ${titleFor(next)}.`}
           </p>
+          {g.today && <TipLine day={g.today.day} moment="levelUp" />}
           <div className="grow" />
           <button className="btn btn-gold btn-block" onClick={() => pop()} autoFocus data-autofocus>Keep going</button>
         </div>
