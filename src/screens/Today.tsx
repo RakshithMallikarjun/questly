@@ -27,6 +27,7 @@ const colorFor = (q: QuestInstance) =>
   q.area && q.kind !== 'checkin' ? AREA_BY_ID[q.area].color : q.kind === 'journey' ? 'var(--teal)' : q.kind === 'checkin' ? 'var(--blue)' : q.kind === 'bonus' ? 'var(--pink)' : 'var(--gold)';
 
 const HEALTH_NUDGE = 'nudge-health';
+const SWIPE_HINT = 'hint-swipe';
 
 export const iconFor = (q: QuestInstance) => (q.kind === 'journey' ? 'journey' : q.kind === 'checkin' ? 'checkin' : q.area ?? 'bonus');
 
@@ -68,6 +69,13 @@ export function Today() {
   const all = today ? stripOrder(today) : [];
   const doneKeys = new Set(today?.done.map((d) => d.key));
   const browsable = all.filter((x) => !doneKeys.has(x.key) && (isRequired(x) || showBonus)).map((x) => x.key);
+  // The other quests sit behind as a stack of blank cards (no text, so it's
+  // still one quest at a time). Up to 2, tinted with the next quests' colours.
+  const qi = q ? browsable.indexOf(q.key) : -1;
+  const ghosts = browsable.length > 1
+    ? [1, 2].slice(0, Math.min(2, browsable.length - 1)).map((n) => colorFor(all.find((x) => x.key === browsable[(qi + n) % browsable.length])!))
+    : [];
+  const showHint = ghosts.length > 0 && !(g.profile.toursSeen ?? []).includes(SWIPE_HINT);
   const { ref: cardRef, handlers: swipe } = useCardSwipe<HTMLDivElement>((dir) => {
     const to = q && browseTarget(browsable, q.key, dir);
     if (!to || leaving) return;
@@ -76,6 +84,7 @@ export function Today() {
     const i = all.findIndex((x) => x.key === to);
     setSaid(`${fmt(t.today.position, { n: i + 1, total: all.length })}: ${all[i].title}`);
     buzz(g.profile.vibrate, 10);
+    if (showHint) tourSeen(SWIPE_HINT);
   }, !!q && browsable.length > 1 && !leaving);
 
   if (!today) return null;
@@ -185,10 +194,14 @@ export function Today() {
       </div>
 
       {q ? (
+        <div className="deck" style={{ paddingBottom: ghosts.length * 12 }}>
+        {ghosts.map((c, i) => (
+          <div key={i} className="deck-ghost" aria-hidden="true" style={{ borderColor: c, bottom: (ghosts.length - 1 - i) * 12, transform: `scale(${0.95 - i * 0.05})`, zIndex: -1 - i }} />
+        ))}
         <div
           key={q.key}
           ref={cardRef}
-          className={`quest-card swipeable ${leaving === q.key ? 'leaving' : enter ? `enter-${enter}` : ''}`}
+          className={`quest-card swipeable ${leaving === q.key ? 'leaving' : enter ? `enter-${enter}` : showHint ? 'nudge' : ''}`}
           style={{ borderColor: colorFor(q) }}
           data-tour="quest"
           onAnimationEnd={(e) => e.target === e.currentTarget && setEnter(null)}
@@ -233,6 +246,7 @@ export function Today() {
           </div>
           {leaving === q.key && <div className="done-tick" aria-hidden="true"><Icon name="check" size={56} color="#fff" stroke={4} /></div>}
         </div>
+        </div>
       ) : (
         <div className="quest-card cleared-card" data-tour="quest">
           <Avatar size={96} />
@@ -254,6 +268,8 @@ export function Today() {
           )}
         </div>
       )}
+
+      {q && showHint && <p className="muted tiny swipe-hint" aria-hidden="true">‹ {t.today.swipeHint} ›</p>}
 
       {today.cleared && q && <ChestCard />}
 

@@ -21,6 +21,7 @@ const en = {
   today: {
     title: 'Your next quest',
     notNow: 'Later',
+    swipeHint: 'Swipe for your other quests',
     position: 'Quest {n} of {total}',
     swap: 'Swap quest',
     swapsLeft: 'Swap ({n} left)',

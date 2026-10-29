@@ -6,6 +6,7 @@ const EDGE = 24; // ignore touches this close to the screen edge (Safari's back 
 const LOCK = 10; // movement before we decide between a sideways swipe and a scroll
 const TRIGGER = 60; // distance that counts as a swipe
 const FLICK = 0.5; // px per ms: a quick flick counts even when short
+const OUT = 180; // ms for the card to fly off after a swipe
 
 /**
  * Sideways swipe on one card, with plain pointer events. The card follows the
@@ -15,6 +16,7 @@ const FLICK = 0.5; // px per ms: a quick flick counts even when short
  */
 export function useCardSwipe<T extends HTMLElement>(onSwipe: (dir: 1 | -1) => void, enabled: boolean) {
   const ref = useRef<T>(null);
+  const busy = useRef(false);
   const drag = useRef<{ id: number; x: number; y: number; t: number; dx: number; axis: 'x' | 'y' | null } | null>(null);
 
   const move = (dx: number, animate: boolean) => {
@@ -31,14 +33,32 @@ export function useCardSwipe<T extends HTMLElement>(onSwipe: (dir: 1 | -1) => vo
     if (d.axis !== 'x') return;
     const speed = Math.abs(d.dx) / Math.max(1, e.timeStamp - d.t);
     const go = !cancelled && (Math.abs(d.dx) >= TRIGGER || (speed > FLICK && Math.abs(d.dx) > 20));
-    move(0, !go && !isCalm());
-    if (go) onSwipe(d.dx < 0 ? 1 : -1);
+    const dir = d.dx < 0 ? 1 : -1;
+    if (!go) return move(0, !isCalm());
+    if (isCalm()) return onSwipe(dir);
+    // Throw the card off the side, then show the next one from the stack.
+    const el = ref.current;
+    if (el) {
+      el.style.transition = `transform ${OUT}ms ease-in, opacity ${OUT}ms ease-in`;
+      el.style.transform = `translateX(${-dir * window.innerWidth}px) rotate(${-dir * 14}deg)`;
+      el.style.opacity = '0';
+    }
+    busy.current = true;
+    setTimeout(() => {
+      busy.current = false;
+      if (el) {
+        el.style.transition = 'none';
+        el.style.transform = '';
+        el.style.opacity = '';
+      }
+      onSwipe(dir);
+    }, OUT);
   };
 
   const handlers = {
     onPointerDown: (e: PointerEvent<T>) => {
       // Touch and pen only: a mouse drag is usually someone selecting text.
-      if (!enabled || !e.isPrimary || e.pointerType === 'mouse') return;
+      if (!enabled || busy.current || !e.isPrimary || e.pointerType === 'mouse') return;
       if ((e.target as Element).closest('button, a, input, select, textarea, label')) return;
       if (e.clientX < EDGE || e.clientX > window.innerWidth - EDGE) return;
       drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, axis: null };
