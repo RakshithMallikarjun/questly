@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut as fbSignOut, type Auth, type User,
 } from 'firebase/auth';
 import {
-  doc, initializeFirestore, onSnapshot, persistentLocalCache, setDoc, type Firestore, type Unsubscribe,
+  deleteDoc, doc, initializeFirestore, onSnapshot, persistentLocalCache, setDoc, type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
 import { healthChanged, parseHealthInbox } from '../game/health';
 import { planReminders } from '../game/reminders';
@@ -104,6 +104,35 @@ const watchHealth = (key: string | undefined) => {
   );
 };
 
+/**
+ * Delete the Apple Health inbox (health/{key}) from the cloud. Resolves
+ * 'done' once the server has it, or 'queued' when offline: the delete is
+ * saved on this phone and sent when it is back online.
+ */
+export const deleteHealthInbox = async (key: string): Promise<'done' | 'queued'> => {
+  if (!db) initSync();
+  if (!db) return 'done';
+  if (healthKey === key) watchHealth(undefined);
+  try {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const sent = deleteDoc(doc(db, 'health', key)).then(() => 'done' as const);
+    // A failure after we stopped waiting is only logged: the user was told it's queued.
+    sent.catch((e: Error) => console.warn('Apple Health disconnect:', e.message));
+    const offline = new Promise<'queued'>((ok) => {
+      timer = setTimeout(() => ok('queued'), 8000);
+    });
+    try {
+      return await Promise.race([sent, offline]);
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    // Keep listening for the key the app still has.
+    watchHealth(useStore.getState().game.profile.healthKey);
+    throw e;
+  }
+};
+
 export const initSync = () => {
   if (!syncConfigured || app) return;
   app = initializeApp(firebaseConfig);
@@ -139,6 +168,18 @@ export const signIn = async () => {
 
 export const signOut = async () => {
   if (auth) await fbSignOut(auth);
+};
+
+/** Delete your synced copy (users/{uid}) from the cloud, then sign out. Progress on this phone stays. */
+export const deleteCloudCopy = async () => {
+  const user = auth?.currentUser;
+  if (!auth || !db || !user) return;
+  // Stop syncing first so nothing writes the copy back.
+  stopSync();
+  if (timer) clearTimeout(timer);
+  timer = null;
+  await deleteDoc(doc(db, 'users', user.uid));
+  await fbSignOut(auth);
 };
 
 /**

@@ -109,7 +109,8 @@ export const makeHabit = (c: HabitChoice, day: string): Habit => ({
 export const finishOnboarding = (base: GameState, profile: Profile, habits: HabitChoice[], now: Date): GameState => {
   const s = clone(base);
   const day = gameDay(now, profile.resetHour);
-  s.profile = profile;
+  // Setup's answers win, but never drop the Apple Health key (the shortcut keeps using it).
+  s.profile = { ...profile, healthKey: profile.healthKey ?? base.profile.healthKey };
   s.onboarded = true;
   const start: Tier = profile.difficulty === 'hardcore' ? 2 : 1;
   (Object.keys(s.tiers) as AreaId[]).forEach((a) => (s.tiers[a] = start));
@@ -377,7 +378,7 @@ export const undoQuest = (input: GameState, key: string, now: Date): Result => {
   return { state: s, events: [] };
 };
 
-/** "Not now": move the current quest to the back of the line. */
+/** "Later": move the current quest to the back of the line. */
 export const skipQuest = (input: GameState, key: string, now: Date): Result => {
   const idx = input.today?.queue.findIndex((q) => q.key === key) ?? -1;
   if (!input.today || idx < 0 || input.today.queue.length < 2) return { state: input, events: [] };

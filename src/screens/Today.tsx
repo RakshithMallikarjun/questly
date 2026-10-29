@@ -8,7 +8,8 @@ import { currentQuest, isRequired } from '../game/generator';
 import { cheerLine } from '../game/content/buddy';
 import { dueFor, dueKey, timeLabel as clock } from '../game/reminders';
 import { CLEAR_BONUS_XP, streakMultiplier } from '../game/xp';
-import type { QuestInstance } from '../game/types';
+import type { QuestInstance, TodayState } from '../game/types';
+import { browseTarget, stableOrder } from '../game/browse';
 import { Avatar, HeroHeader } from '../components/HeroHeader';
 import { AreaIcon, Icon } from '../components/Icon';
 import { ChestCard } from '../components/Chest';
@@ -17,19 +18,35 @@ import { fmt, strings } from '../i18n';
 import { useStore } from '../store';
 import { buzz, chime, flyCoins, floatText, focusQuest, isCalm, useFx } from '../fx';
 import { enableNotifications, useNotify } from '../notify';
-import { HEALTH_SYNC_URL, healthStale } from '../components/HealthSetup';
+import { HEALTH_SYNC_URL, healthStale, isIPhone } from '../components/HealthSetup';
+import { TipLine } from '../components/TipLine';
+import { useCardSwipe } from '../components/useCardSwipe';
 import { JourneyCard } from './Journey';
 
 const colorFor = (q: QuestInstance) =>
   q.area && q.kind !== 'checkin' ? AREA_BY_ID[q.area].color : q.kind === 'journey' ? 'var(--teal)' : q.kind === 'checkin' ? 'var(--blue)' : q.kind === 'bonus' ? 'var(--pink)' : 'var(--gold)';
 
+const HEALTH_NUDGE = 'nudge-health';
+const SWIPE_HINT = 'hint-swipe';
+
 export const iconFor = (q: QuestInstance) => (q.kind === 'journey' ? 'journey' : q.kind === 'checkin' ? 'checkin' : q.area ?? 'bonus');
 
 const timeLabel = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
+// The quest icons keep a steady order while you jump around (jumping moves a
+// quest to the front of the queue). Remembered for the day, across tabs.
+let shown = { day: '', keys: [] as string[] };
+const stripOrder = (today: TodayState): QuestInstance[] => {
+  const all = [...today.doneQuests, ...today.queue];
+  const keys = stableOrder(shown.day === today.day ? shown.keys : [], all.map((x) => x.key));
+  shown = { day: today.day, keys };
+  const byKey = new Map(all.map((x) => [x.key, x]));
+  return keys.map((k) => byKey.get(k)!);
+};
+
 export function Today() {
   const g = useStore((s) => s.game);
-  const { complete, skip, swap, undo, challengeDay, focus } = useStore.getState();
+  const { complete, skip, swap, undo, challengeDay, focus, tourSeen } = useStore.getState();
   const cheer = useFx((s) => s.cheer);
   const [leaving, setLeaving] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
@@ -37,20 +54,45 @@ export function Today() {
   const [recent, setRecent] = useState<{ key: string; xp: number; at: number } | null>(null);
   const [slipFor, setSlipFor] = useState<string | null>(null);
   const [editDue, setEditDue] = useState(false);
+  const [enter, setEnter] = useState<'next' | 'prev' | null>(null);
+  // Said once after a swipe, for screen readers ("Quest 2 of 5: ...").
+  const [said, setSaid] = useState('');
   const cheers = useRef(0);
   const doneList = useRef<HTMLDivElement>(null);
   const permission = useNotify((s) => s.permission);
   const t = strings();
   const today = g.today;
+
+  // Swiping the card browses: left = next quest, right = previous. It only
+  // changes which quest is shown (like tapping an icon). Never Done, never Later.
+  const q = today ? currentQuest(today.queue, showBonus) : undefined;
+  const all = today ? stripOrder(today) : [];
+  const doneKeys = new Set(today?.done.map((d) => d.key));
+  const browsable = all.filter((x) => !doneKeys.has(x.key) && (isRequired(x) || showBonus)).map((x) => x.key);
+  // The other quests sit behind as a stack of blank cards (no text, so it's
+  // still one quest at a time). Up to 2, tinted with the next quests' colours.
+  const qi = q ? browsable.indexOf(q.key) : -1;
+  const ghosts = browsable.length > 1
+    ? [1, 2].slice(0, Math.min(2, browsable.length - 1)).map((n) => colorFor(all.find((x) => x.key === browsable[(qi + n) % browsable.length])!))
+    : [];
+  const showHint = ghosts.length > 0 && !(g.profile.toursSeen ?? []).includes(SWIPE_HINT);
+  const { ref: cardRef, handlers: swipe } = useCardSwipe<HTMLDivElement>((dir) => {
+    const to = q && browseTarget(browsable, q.key, dir);
+    if (!to || leaving) return;
+    focus(to);
+    setEnter(dir === 1 ? 'next' : 'prev');
+    const i = all.findIndex((x) => x.key === to);
+    setSaid(`${fmt(t.today.position, { n: i + 1, total: all.length })}: ${all[i].title}`);
+    buzz(g.profile.vibrate, 10);
+    if (showHint) tourSeen(SWIPE_HINT);
+  }, !!q && browsable.length > 1 && !leaving);
+
   if (!today) return null;
 
   const required = today.queue.filter(isRequired);
   const bonus = today.queue.filter((x) => !isRequired(x));
   // Once nothing required is left, the day is "done": bonus quests are optional.
   const dayDone = required.length === 0;
-  const q = currentQuest(today.queue, showBonus);
-  const all = [...today.doneQuests, ...today.queue];
-  const doneKeys = new Set(today.done.map((d) => d.key));
   const mult = streakMultiplier(g.streak.current);
   const streakDays = `${g.streak.current} ${g.streak.current === 1 ? 'day' : 'days'}`;
 
@@ -70,6 +112,7 @@ export function Today() {
       complete(key);
       setRecent({ key, xp, at: Date.now() });
       setLeaving(null);
+      setEnter(null);
       if (useStore.getState().game.today?.queue.some(isRequired)) setShowBonus(false);
     };
     if (isCalm()) return done();
@@ -92,6 +135,14 @@ export function Today() {
 
   const challenge = g.challenge ? CHALLENGE_BY_ID[g.challenge.id] : null;
   const healthCard = healthStale(g.profile.healthKey, g.health, today.day);
+  // One-time nudge for iPhone users who skipped Apple Health in setup, from their second day.
+  const healthNudge = !g.profile.healthKey && Object.keys(g.history).length >= 2
+    && !(g.profile.toursSeen ?? []).includes(HEALTH_NUDGE) && isIPhone();
+  const openHealth = () => {
+    tourSeen(HEALTH_NUDGE);
+    sessionStorage.setItem('questly-open', 'health');
+    window.location.hash = '/profile';
+  };
 
   return (
     <div className="screen">
@@ -114,7 +165,7 @@ export function Today() {
           )}
         </div>
         <div className="quest-strip" role="group" aria-label="Today's quests" data-tour="strip">
-          {all.map((x) => {
+          {all.map((x, i) => {
             const done = doneKeys.has(x.key);
             const now = x.key === q?.key;
             const c = colorFor(x);
@@ -122,7 +173,7 @@ export function Today() {
               <button
                 key={x.key}
                 aria-current={now ? 'step' : undefined}
-                aria-label={`${x.title}${done ? ', done' : now ? ', current quest' : ''}${!isRequired(x) ? ', optional bonus' : ''}`}
+                aria-label={`${fmt(t.today.position, { n: i + 1, total: all.length })}: ${x.title}${done ? ', done' : now ? ', current quest' : ''}${!isRequired(x) ? ', optional bonus' : ''}`}
                 className={`qs ${done ? 'done' : ''} ${now ? 'now' : ''}`}
                 style={{ borderColor: c, background: done ? c : now ? `color-mix(in srgb, ${c} 28%, var(--card))` : 'var(--card)' }}
                 onClick={() => {
@@ -130,6 +181,7 @@ export function Today() {
                   if (now) return;
                   if (!isRequired(x)) setShowBonus(true);
                   focus(x.key);
+                  setEnter(null);
                   buzz(g.profile.vibrate, 10);
                 }}
               >
@@ -142,7 +194,19 @@ export function Today() {
       </div>
 
       {q ? (
-        <div key={q.key} className={`quest-card ${leaving === q.key ? 'leaving' : ''}`} style={{ borderColor: colorFor(q) }} data-tour="quest">
+        <div className="deck" style={{ paddingBottom: ghosts.length * 12 }}>
+        {ghosts.map((c, i) => (
+          <div key={i} className="deck-ghost" aria-hidden="true" style={{ borderColor: c, bottom: (ghosts.length - 1 - i) * 12, transform: `scale(${0.95 - i * 0.05})`, zIndex: -1 - i }} />
+        ))}
+        <div
+          key={q.key}
+          ref={cardRef}
+          className={`quest-card swipeable ${leaving === q.key ? 'leaving' : enter ? `enter-${enter}` : showHint ? 'nudge' : ''}`}
+          style={{ borderColor: colorFor(q) }}
+          data-tour="quest"
+          onAnimationEnd={(e) => e.target === e.currentTarget && setEnter(null)}
+          {...swipe}
+        >
           <div className="between">
             <span className="label-caps" style={{ color: colorFor(q) }}>
               {t.today.kinds[q.kind]}{q.area ? ` · ${AREA_BY_ID[q.area].label}` : ''}
@@ -171,16 +235,17 @@ export function Today() {
               <button className="btn btn-green" onClick={finish}>{t.common.done}</button>
             )}
             <div className="row" style={{ justifyContent: 'center', gap: 0 }}>
-              {(dayDone ? bonus.length > 1 : required.length > 1) && <button className="btn btn-text" onClick={() => skip(q.key)}>{t.today.notNow}</button>}
+              {(dayDone ? bonus.length > 1 : required.length > 1) && <button className="btn btn-text" onClick={() => { setEnter(null); skip(q.key); focusQuest(); }}>{t.today.notNow}</button>}
               {dayDone && <button className="btn btn-text" onClick={() => setShowBonus(false)}>Hide bonus</button>}
               {q.area && q.kind !== 'checkin' && q.kind !== 'journey' && swapsLeft(g) > 0 && (
-                <button className="btn btn-text" onClick={() => swap(q.key)} aria-label={t.today.swap}>
+                <button className="btn btn-text" onClick={() => { setEnter(null); swap(q.key); focusQuest(); }} aria-label={t.today.swap}>
                   <Icon name="swap" size={18} /> {fmt(t.today.swapsLeft, { n: swapsLeft(g) })}
                 </button>
               )}
             </div>
           </div>
           {leaving === q.key && <div className="done-tick" aria-hidden="true"><Icon name="check" size={56} color="#fff" stroke={4} /></div>}
+        </div>
         </div>
       ) : (
         <div className="quest-card cleared-card" data-tour="quest">
@@ -192,6 +257,7 @@ export function Today() {
             {today.cleared ? `Streak: ${streakDays}. +${CLEAR_BONUS_XP} bonus XP. Rest well, or keep going.` : t.today.allDone}
           </p>
           {today.cleared && <ChestCard hero />}
+          {today.cleared && <TipLine day={today.day} moment="cleared" />}
           {today.chest && (
             <span className="xp-pill" style={{ fontSize: 14 }}>
               Chest: {today.chest.reward === 'coins' ? `+${today.chest.amount} coins` : today.chest.reward === 'shield' ? 'streak shield' : `+${today.chest.amount} XP`}
@@ -202,6 +268,8 @@ export function Today() {
           )}
         </div>
       )}
+
+      {q && showHint && <p className="muted tiny swipe-hint" aria-hidden="true">‹ {t.today.swipeHint} ›</p>}
 
       {today.cleared && q && <ChestCard />}
 
@@ -269,6 +337,15 @@ export function Today() {
           </div>
         )}
 
+        {healthNudge && (
+          <div className="card stack" role="note">
+            <div className="row"><Icon name="heart" color="var(--pink)" /><b>{t.health.nudgeTitle}</b></div>
+            <span className="soft small">{t.health.nudgeBody}</span>
+            <button className="btn btn-gold" onClick={openHealth}>{t.health.nudgeOpen}</button>
+            <button className="btn btn-ghost" onClick={() => tourSeen(HEALTH_NUDGE)} aria-label={t.health.nudgeDismissLabel}>{t.health.nudgeDismiss}</button>
+          </div>
+        )}
+
         {permission === 'default' && (
           <div className="card stack">
             <div className="row"><Icon name="clock" color="var(--purple)" /><b>{t.remind.section}</b></div>
@@ -278,6 +355,7 @@ export function Today() {
         )}
       </section>
 
+      <span className="sr-only" aria-live="polite">{said}</span>
       {recent && today.done.some((d) => d.key === recent.key) && (
         <UndoToast key={recent.at} xp={recent.xp} onUndo={() => undoQuest(recent.key)} onDone={() => setRecent(null)} />
       )}

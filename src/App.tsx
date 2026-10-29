@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Celebrations } from './components/Celebrations';
 import { Icon } from './components/Icon';
 import { setLanguage, strings } from './i18n';
-import { Onboarding } from './screens/Onboarding';
+import { Onboarding, useSetupFlow } from './screens/Onboarding';
 import { Profile } from './screens/Profile';
 import { Progress } from './screens/Progress';
 import { Quit } from './screens/Quit';
@@ -28,6 +28,8 @@ const tabFromHash = (): Page => {
 
 export default function App() {
   const onboarded = useStore((s) => s.game.onboarded);
+  // Right after setup, iPhone users get an optional Apple Health screen first.
+  const healthOffer = useSetupFlow((s) => s.healthOffer);
   const language = useStore((s) => s.game.profile.language);
   const tick = useStore((s) => s.tick);
   const [tab, setTab] = useState<Page>(tabFromHash);
@@ -89,7 +91,7 @@ export default function App() {
     document.querySelector('.screen')?.scrollTo(0, 0);
   };
 
-  if (!onboarded) {
+  if (!onboarded || healthOffer) {
     return (
       <div className="app">
         <Onboarding />

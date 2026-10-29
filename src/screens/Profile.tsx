@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon';
 import { ReminderSettings } from '../components/ReminderSettings';
 import { SwitchRow } from '../components/Switch';
 import { HealthSetup } from '../components/HealthSetup';
+import { PrivacyPage } from '../components/PrivacyPage';
 import { BuddyPage } from '../components/BuddyPage';
 import { TabTip, startTour } from '../components/Tour';
 import { perWord } from '../components/LimitFields';
@@ -29,7 +30,7 @@ function Segmented<T extends string | number>({ value, options, onPick }: { valu
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-type Page = 'buddy' | 'reminders' | 'health' | 'quests' | 'areas' | 'habits' | 'custom' | 'data';
+type Page = 'buddy' | 'reminders' | 'health' | 'quests' | 'areas' | 'habits' | 'custom' | 'data' | 'privacy';
 
 const clock = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -58,9 +59,10 @@ export function Profile() {
   const [addingQuest, setAddingQuest] = useState(false);
   const [page, setPage] = useState<Page | null>(null);
   useEffect(() => {
-    if (sessionStorage.getItem('questly-open') === 'buddy') {
+    const open = sessionStorage.getItem('questly-open');
+    if (open === 'buddy' || open === 'health') {
       sessionStorage.removeItem('questly-open');
-      setPage('buddy');
+      setPage(open);
     }
   }, []);
   const p = g.profile;
@@ -102,6 +104,7 @@ export function Profile() {
     { id: 'habits', icon: 'quit', color: 'var(--pink)', label: t.profile.habits, sub: g.habits.length ? g.habits.map((h) => h.name).join(', ') : 'None yet' },
     { id: 'custom', icon: 'plus', color: 'var(--blue)', label: t.profile.customQuests, sub: g.customQuests.length ? `${g.customQuests.length} quest${g.customQuests.length === 1 ? '' : 's'}` : 'Add your own' },
     { id: 'data', icon: 'download', color: 'var(--orange)', label: 'Backup and more', sub: 'Backup, language, start over' },
+    { id: 'privacy', icon: 'lock', color: 'var(--teal)', label: 'Privacy', sub: 'What Questly keeps and how to delete it' },
   ];
 
   if (page) {
@@ -118,6 +121,8 @@ export function Profile() {
         {page === 'reminders' && <ReminderSettings />}
 
         {page === 'health' && <HealthSetup />}
+
+        {page === 'privacy' && <PrivacyPage openHealth={() => setPage('health')} openData={() => setPage('data')} />}
 
         {page === 'quests' && (
           <div className="card stack">

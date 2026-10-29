@@ -13,8 +13,13 @@ export const initSync = () => {
 };
 export const signIn = () => load().then((m) => m.signIn());
 export const signOut = () => load().then((m) => m.signOut());
+/** Delete your synced copy from the cloud and sign out. */
+export const deleteCloudCopy = () => load().then((m) => m.deleteCloudCopy());
 export const registerPush = (deviceId: string, reg: ServiceWorkerRegistration) =>
   syncConfigured ? load().then((m) => m.registerPush(deviceId, reg)) : Promise.resolve(false);
+/** Delete the Apple Health inbox from the cloud (nothing to do without sync). */
+export const deleteHealthInbox = (key: string): Promise<'done' | 'queued'> =>
+  syncConfigured ? load().then((m) => m.deleteHealthInbox(key)) : Promise.resolve('done');
 export const flush = () => {
   if (mod) mod.then((m) => m.flush());
 };
