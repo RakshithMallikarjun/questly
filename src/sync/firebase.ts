@@ -170,6 +170,18 @@ export const signOut = async () => {
   if (auth) await fbSignOut(auth);
 };
 
+/** Delete your synced copy (users/{uid}) from the cloud, then sign out. Progress on this phone stays. */
+export const deleteCloudCopy = async () => {
+  const user = auth?.currentUser;
+  if (!auth || !db || !user) return;
+  // Stop syncing first so nothing writes the copy back.
+  stopSync();
+  if (timer) clearTimeout(timer);
+  timer = null;
+  await deleteDoc(doc(db, 'users', user.uid));
+  await fbSignOut(auth);
+};
+
 /**
  * Register this phone for reminders sent by the server (Firebase Cloud
  * Messaging) and save its address in your user document.
